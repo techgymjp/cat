@@ -62,7 +62,7 @@ const glowTex = (() => {
   const c = document.createElement('canvas'); c.width = c.height = 64;
   const g = c.getContext('2d');
   const grd = g.createRadialGradient(32, 32, 4, 32, 32, 32);
-  grd.addColorStop(0, 'rgba(255,220,110,.75)'); grd.addColorStop(1, 'rgba(255,200,80,0)');
+  grd.addColorStop(0, 'rgba(255,215,90,.95)'); grd.addColorStop(1, 'rgba(255,200,80,0)');
   g.fillStyle = grd; g.fillRect(0, 0, 64, 64);
   return new THREE.CanvasTexture(c);
 })();
@@ -74,7 +74,7 @@ function addMarker(rec) {
   const sp = new THREE.Sprite(sparkleMat); sp.scale.setScalar(.7); sp.position.y = rec.h + .45; m.add(sp);
   const sp2 = new THREE.Sprite(sparkleMat); sp2.scale.setScalar(.4); sp2.position.set(rec.w * .4, rec.h * .6, 0); m.add(sp2);
   const gl = new THREE.Mesh(glowGeo, glowMat); gl.rotation.x = -Math.PI / 2; gl.position.y = .03;
-  gl.scale.set(Math.max(rec.w, 1) * 1.6, Math.max(rec.d, 1) * 1.6, 1); m.add(gl);
+  gl.scale.set(Math.max(rec.w, 1) * 2.2, Math.max(rec.d, 1) * 2.2, 1); m.add(gl);
   m.position.set(rec.x, rec.y0, rec.z);
   m.userData = { sp, sp2, phase: Math.random() * 6 };
   scene.add(m);
@@ -553,8 +553,8 @@ function update(dt) {
   for (const o of obstacles) {
     if (!o.marker) continue;
     const u = o.marker.userData, tt = clock.elapsedTime * 5 + u.phase;
-    u.sp.scale.setScalar(.55 + Math.sin(tt) * .2); u.sp.material.rotation = tt * .1;
-    u.sp2.scale.setScalar(Math.max(0, Math.sin(tt * 1.3 + 2)) * .45);
+    u.sp.scale.setScalar(.95 + Math.sin(tt) * .3); u.sp.material.rotation = tt * .1;
+    u.sp2.scale.setScalar(Math.max(0, Math.sin(tt * 1.3 + 2)) * .7);
     u.sp.position.y = o.h + .45 + Math.sin(tt * .5) * .08;
   }
 

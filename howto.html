@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>猫ボール 遊び方</title>
+<style>
+  :root {
+    --bg: #f6efe3; --card: #fffaf2; --ink: #3b2a1e; --sub: #7a6553; --accent: #e0812f; --accent-dark: #b5651d;
+    --ok: #2f8a4a; --ng: #c2412d; --line: #ead9c2; --spark: #f5c542;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Hiragino Maru Gothic ProN", "Rounded Mplus 1c", "Yu Gothic", sans-serif; line-height: 1.8; }
+  header { text-align: center; padding: 40px 16px 24px; background: linear-gradient(#3b2a1e, #5a3e2b); color: #fff; }
+  header h1 { margin: 0; font-size: clamp(40px, 10vw, 72px); color: #ffcf6e; text-shadow: 0 4px 0 var(--accent-dark), 0 8px 16px rgba(0,0,0,.4); letter-spacing: .05em; }
+  header p { margin: 8px 0 20px; opacity: .9; }
+  .play { display: inline-block; font-size: 20px; font-weight: bold; padding: 12px 36px; border-radius: 999px; background: #ff9f43; color: #fff; text-decoration: none; box-shadow: 0 5px 0 var(--accent-dark); }
+  .play:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--accent-dark); }
+  nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; padding: 12px 16px; background: var(--card); border-bottom: 1px solid var(--line); font-size: 14px; position: sticky; top: 0; z-index: 2; }
+  nav a { color: var(--accent-dark); text-decoration: none; }
+  main { max-width: 860px; margin: 0 auto; padding: 8px 16px 60px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px 22px; margin: 22px 0; }
+  h2 { margin: 0 0 10px; font-size: 22px; display: flex; align-items: center; gap: 10px; }
+  h2 .num { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: 17px; }
+  h3 { margin: 18px 0 6px; font-size: 17px; }
+  p { margin: 6px 0; }
+  img.shot { width: 100%; border-radius: 10px; border: 1px solid var(--line); display: block; margin: 10px 0; }
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .box { border-radius: 12px; padding: 12px 14px; border: 2px solid var(--line); background: #fff; }
+  .box.ok { border-color: #9fd3ad; background: #f1faf3; }
+  .box.ng { border-color: #efb2a6; background: #fdf2ef; }
+  .box h3 { margin-top: 0; }
+  .ok-t { color: var(--ok); } .ng-t { color: var(--ng); }
+  ul { margin: 6px 0; padding-left: 1.3em; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+  th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: #f3e6d3; width: 30%; }
+  kbd { display: inline-block; padding: 0 7px; border: 1px solid #cdb79c; border-bottom-width: 3px; border-radius: 6px; background: #fff; font-family: inherit; font-size: 14px; }
+  .scenes { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+  .scenes figure { margin: 0; }
+  .scenes img { width: 100%; border-radius: 8px; border: 1px solid var(--line); display: block; }
+  .scenes figcaption { font-size: 14px; text-align: center; margin-top: 4px; }
+  .order { font-weight: bold; color: var(--accent-dark); }
+  .tip { background: #fff4d6; border-left: 5px solid var(--spark); padding: 8px 12px; border-radius: 8px; margin: 10px 0; }
+  .gimmicks { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .gimmicks .box img { width: 100%; border-radius: 8px; display: block; margin-bottom: 8px; }
+  footer { text-align: center; padding: 10px 16px 40px; color: var(--sub); font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>猫ボール</h1>
+  <p>遊び方ガイド</p>
+  <a class="play" href="index.html">ゲームで遊ぶ ▶</a>
+</header>
+<nav>
+  <a href="#goal">目的</a><a href="#control">操作</a><a href="#forms">2つの姿</a><a href="#break">壊せる物</a><a href="#out">アウト</a><a href="#ride">家具に乗る</a><a href="#door">猫用扉</a><a href="#scenes">場面</a><a href="#gimmick">仕掛け</a><a href="#score">スコア</a>
+</nav>
+<main>
+
+<section id="goal">
+  <h2><span class="num">1</span>ゲームの目的</h2>
+  <p>まるくなったネコが、<b>玄関から家の奥へ</b>どこまでも転がっていきます。</p>
+  <p>家具や動物をよけながら、<b>キラキラ✨している物をぶっ壊して</b>、どこまで遠くへ行けるかにチャレンジ！</p>
+  <p>ネコは自動で前に進みます。進むほどスピードが上がり、BGMもどんどん速くなります。</p>
+</section>
+
+<section id="control">
+  <h2><span class="num">2</span>操作方法</h2>
+  <table>
+    <tr><th></th><th>パソコン</th><th>スマホ・タブレット</th></tr>
+    <tr><th>左右に移動</th><td><kbd>←</kbd> <kbd>→</kbd> または <kbd>A</kbd> <kbd>D</kbd><br>マウスで左右にドラッグ</td><td>画面を左右にドラッグ</td></tr>
+    <tr><th>ジャンプ</th><td><kbd>スペース</kbd> / <kbd>↑</kbd> / クリック</td><td>画面をタップ</td></tr>
+    <tr><th>BGM のオン・オフ</th><td colspan="2">画面右上の 🔊 ボタン</td></tr>
+  </table>
+  <p>ジャンプすると「にゃお」と鳴きます。</p>
+</section>
+
+<section id="forms">
+  <h2><span class="num">3</span>ネコの2つの姿</h2>
+  <img class="shot" src="img/cats.jpg" alt="ネコの姿（左）と丸まったボールの姿（右）" onerror="this.remove()">
+  <div class="cols">
+    <div class="box">
+      <h3>🟠 ボールの姿（床の上）</h3>
+      <p>ふだんは丸まったボールになって床を転がります。</p>
+      <p>猫用扉は、この姿でしかくぐれません。</p>
+    </div>
+    <div class="box">
+      <h3>🐈 ネコの姿（ジャンプ中・家具の上）</h3>
+      <p>ジャンプすると身体を大きく広げて、ネコの姿にもどります。</p>
+      <p>テーブルやイスの上に着地すると、その上をとことこ歩けます。</p>
+    </div>
+  </div>
+</section>
+
+<section id="break">
+  <h2><span class="num">4</span>壊せる物 ✨</h2>
+  <p><b>キラキラ光っていて、足もとがほんのり明るい物</b>は壊せます。ボールでもネコでも、当たればOK。<b>1こ20点</b>です。</p>
+  <img class="shot" src="img/breakable.jpg" alt="キラキラしている壊せる物" onerror="this.remove()">
+  <div class="cols">
+    <div class="box ok">
+      <h3 class="ok-t">床に置いてある物</h3>
+      <ul><li>観葉植物</li><li>扇風機</li><li>ルンバ（左右にうろうろ動く）</li><li>洗濯物（山・かご）</li><li>台の上の花瓶</li></ul>
+    </div>
+    <div class="box ok">
+      <h3 class="ok-t">テーブル・カウンターの上の物</h3>
+      <ul><li>花瓶・一輪挿し</li><li>金魚鉢</li><li>貯金箱</li><li>小さな観葉植物</li><li>食器・湯のみ・急須・マグカップ・ティーセット・果物かご</li></ul>
+    </div>
+  </div>
+  <p class="tip">テーブルの上の物は、ジャンプしてテーブルに乗り、歩いてぶつかると壊せます。</p>
+</section>
+
+<section id="out">
+  <h2><span class="num">5</span>当たるとアウト（一発アウト）</h2>
+  <p>ライフは1つだけ。次の物にぶつかったら、その場でゲームオーバーです。</p>
+  <div class="cols">
+    <div class="box ng">
+      <h3 class="ng-t">据え置きの家具・物</h3>
+      <ul>
+        <li>テーブル・ちゃぶ台・こたつ・座卓・ソファ・ベッド</li>
+        <li>イス（ダイニングチェア・オフィスチェア・座椅子・ひじ掛け椅子）</li>
+        <li>段ボール・みかん箱・傘立て・掃除機・ワゴン</li>
+        <li>行灯・火鉢・屏風・フロアランプ・地球儀</li>
+      </ul>
+    </div>
+    <div class="box ng">
+      <h3 class="ng-t">動物・動くもの・壁</h3>
+      <ul>
+        <li>廊下で迫ってくる掃除機</li>
+        <li>茶の間の先輩ネコ</li>
+        <li>応接室の大きな犬</li>
+        <li>猫用扉のまわりの壁</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="ride">
+  <h2><span class="num">6</span>家具に乗る・乗り越える</h2>
+  <p>テーブル・こたつ・座卓・ベッド・ソファ・イスなどは、<b>ジャンプして上に乗れます</b>。横からぶつかるとアウトですが、上からなら大丈夫。</p>
+  <p>ジャンプが少し低くても、家具のふちに届けばネコがよじのぼります。</p>
+  <h3>通せんぼ家具</h3>
+  <p>部屋の幅いっぱいに置かれた家具は、よけられません。<b>ジャンプして乗り越えましょう</b>。</p>
+  <ul><li>玄関の上がり框（あがりかまち）</li><li>洋室の横向きのベッド</li><li>キッチンのカウンター</li></ul>
+</section>
+
+<section id="door">
+  <h2><span class="num">7</span>猫用扉をくぐって次の部屋へ</h2>
+  <img class="shot" src="img/door.jpg" alt="部屋のさかいめの猫用扉" onerror="this.remove()">
+  <p>部屋のさかいめには壁があり、ドアや襖の下に<b>猫用扉</b>がついています。</p>
+  <ul>
+    <li>自分で左右に動いて、扉の位置にねらいを合わせます。</li>
+    <li><b>ボールの姿（床の上）</b>でくぐります。ジャンプ中に当たると、扉の上の壁にゴツン！</li>
+    <li>扉から外れると壁にぶつかってアウトです。</li>
+  </ul>
+  <p class="tip">扉の前と、くぐった直後には障害物はありません。落ち着いてねらいましょう。</p>
+</section>
+
+<section id="scenes">
+  <h2><span class="num">8</span>場面の順番</h2>
+  <p class="order">玄関 → 廊下 → 茶の間 → 和室 → 洋室 → キッチン → 洋風応接室</p>
+  <p>洋風応接室のあとは、廊下からくり返します。</p>
+  <div class="scenes">
+    <figure><img src="img/scene_genkan.jpg" alt="玄関" onerror="this.parentNode.remove()"><figcaption>玄関</figcaption></figure>
+    <figure><img src="img/scene_rouka.jpg" alt="廊下" onerror="this.parentNode.remove()"><figcaption>廊下</figcaption></figure>
+    <figure><img src="img/scene_chanoma.jpg" alt="茶の間" onerror="this.parentNode.remove()"><figcaption>茶の間</figcaption></figure>
+    <figure><img src="img/scene_washitsu.jpg" alt="和室" onerror="this.parentNode.remove()"><figcaption>和室</figcaption></figure>
+    <figure><img src="img/scene_yoshitsu.jpg" alt="洋室" onerror="this.parentNode.remove()"><figcaption>洋室</figcaption></figure>
+    <figure><img src="img/scene_kitchen.jpg" alt="キッチン" onerror="this.parentNode.remove()"><figcaption>キッチン</figcaption></figure>
+    <figure><img src="img/scene_oosetsu.jpg" alt="洋風応接室" onerror="this.parentNode.remove()"><figcaption>洋風応接室</figcaption></figure>
+  </div>
+</section>
+
+<section id="gimmick">
+  <h2><span class="num">9</span>部屋ごとの仕掛け</h2>
+  <div class="gimmicks">
+    <div class="box">
+      <img src="img/gm_vacuum.jpg" alt="迫ってくる掃除機" onerror="this.remove()">
+      <h3>廊下：迫ってくる掃除機</h3>
+      <p>こちらに向かってきて、左右にも追いかけてきます。よけるか、ジャンプで飛び越えましょう。</p>
+    </div>
+    <div class="box">
+      <img src="img/gm_cat.jpg" alt="座布団で寝ている先輩ネコ" onerror="this.remove()">
+      <h3>茶の間：寝ている先輩ネコ</h3>
+      <p>ボールのまま近くを転がると、目をさまして「シャーッ」！毛を逆立てて大きくなります。ジャンプで静かに越えれば起きません。</p>
+    </div>
+    <div class="box">
+      <img src="img/gm_puddle.jpg" alt="濡れた床" onerror="this.remove()">
+      <h3>キッチン：濡れた床</h3>
+      <p>こぼれた水の上をボールで通ると、横につるーっと滑って、しばらく操作できません。滑った先の障害物に注意！</p>
+    </div>
+    <div class="box">
+      <img src="img/gm_dog.jpg" alt="寝ている大きな犬" onerror="this.remove()">
+      <h3>洋風応接室：寝ている大きな犬</h3>
+      <p>部屋の片側で寝ています。ぶつかるとアウト。上を飛び越えると「ワン！」とほえます。</p>
+    </div>
+  </div>
+</section>
+
+<section id="score">
+  <h2><span class="num">10</span>スコア</h2>
+  <p><b>スコア ＝ 進んだきょり(m) ＋ 壊した物 × 20</b></p>
+  <p>ベスト記録はブラウザに保存されます。ゲームオーバー画面には、どこで何にぶつかったかが表示されます。</p>
+  <p>BGM は運動会でおなじみの「天国と地獄」（オッフェンバック作曲）です。</p>
+</section>
+
+<p style="text-align:center"><a class="play" href="index.html">ゲームで遊ぶ ▶</a></p>
+</main>
+<footer>猫ボール</footer>
+</body>
+</html>
