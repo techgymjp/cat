@@ -199,6 +199,35 @@ function sfx(freq, dur, delay = 0, type = 'square', vol = 0.06) {
     o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur);
   } catch {}
 }
+// 「にゃお」：音程が上がって下がる声を、母音のフォルマントを動かして合成
+function meow() {
+  try {
+    const ac = audio(), t = ac.currentTime, dur = rand(.42, .55), base = rand(520, 640);
+    const src = ac.createOscillator(); src.type = 'sawtooth';
+    src.frequency.setValueAtTime(base * .8, t);
+    src.frequency.linearRampToValueAtTime(base * 1.35, t + dur * .3);   // にゃ
+    src.frequency.linearRampToValueAtTime(base * .75, t + dur);         // お
+    const vib = ac.createOscillator(), vibG = ac.createGain();
+    vib.frequency.value = 7; vibG.gain.value = 12; vib.connect(vibG).connect(src.frequency);
+    const out = ac.createGain();
+    out.gain.setValueAtTime(0.0001, t);
+    out.gain.exponentialRampToValueAtTime(.32, t + .05);
+    out.gain.setValueAtTime(.32, t + dur * .55);
+    out.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    // 2つのフォルマント（「ア」→「オ」）
+    const formants = [[1100, 800], [2300, 1000]];
+    for (const [f1, f2] of formants) {
+      const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 6;
+      bp.frequency.setValueAtTime(f1 * .7, t);
+      bp.frequency.linearRampToValueAtTime(f1, t + dur * .3);
+      bp.frequency.linearRampToValueAtTime(f2, t + dur);
+      src.connect(bp).connect(out);
+    }
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3500;
+    out.connect(lp).connect(ac.destination);
+    src.start(t); vib.start(t); src.stop(t + dur + .02); vib.stop(t + dur + .02);
+  } catch {}
+}
 function noiseSfx(dur = .35, cutoff = 1800, vol = .35) {
   try {
     const ac = audio(), len = ac.sampleRate * dur;
@@ -324,7 +353,7 @@ function update(dt) {
     // ジャンプ
     if (input.jumpQueued && state.grounded && !(toDoor > 0 && toDoor < 7)) {
       state.vy = JUMP_V; state.grounded = false; state.onFloor = false;
-      sfx(500, .08, 0, 'triangle', .1); sfx(800, .1, .05, 'triangle', .1);
+      meow();
     }
     input.jumpQueued = false;
     if (toDoor > 0 && toDoor < 6 && state.y > 0) state.vy = Math.min(state.vy, -9); // 扉の前では床に降りる
