@@ -78,6 +78,12 @@ function spawnContent(info, zCenter, difficulty) {
   let barrierRow = -1;
   if (sc.id === 'genkan' && info.segIdx === 1) barrierRow = 0;               // 上がり框
   else if (sc.barriers && Math.random() < sc.barrierRate) barrierRow = Math.random() * rows | 0;
+  let gimmickRow = -1;
+  if (sc.gimmicks && Math.random() < sc.gimmickRate) {
+    gimmickRow = Math.random() * rows | 0;
+    if (gimmickRow === barrierRow) gimmickRow = (gimmickRow + 1) % rows;
+    if (gimmickRow === barrierRow) gimmickRow = -1;
+  }
 
   for (let r = 0; r < rows; r++) {
     const z = top - (r + 0.5) * slot;
@@ -88,6 +94,18 @@ function spawnContent(info, zCenter, difficulty) {
     }
     const free = Math.random() * 3 | 0;
     const others = [0, 1, 2].filter(i => i !== free).sort(() => Math.random() - .5);
+    if (r === gimmickRow) {
+      const gm = pick(sc.gimmicks)();
+      const x = gm.gimmick === 'dog'
+        ? (Math.random() < .5 ? -1 : 1) * (PLAY_X - gm.w / 2)
+        : THREE.MathUtils.clamp(LANES[others[0]], -PLAY_X + gm.w / 2, PLAY_X - gm.w / 2);
+      addObstacle(gm, x, z, 0, gm.kind);
+      if (gm.gimmick === 'puddle') { // 滑った先に障害物
+        const ob = pick(sc.obstacles)();
+        addObstacle(ob, THREE.MathUtils.clamp(LANES[others[1]], -PLAY_X + ob.w / 2, PLAY_X - ob.w / 2), z - gm.d / 2 - 2.5, 0, ob.fixed ? 'platform' : 'break');
+      }
+      continue;
+    }
     if (Math.random() < sc.platformRate) {
       const o = pick(sc.platforms)(slot - 1.5);
       const x = THREE.MathUtils.clamp(LANES[others[0]], -PLAY_X + o.w / 2, PLAY_X - o.w / 2);
@@ -152,7 +170,7 @@ let best = Number(lsGet('catball-best') || 0);
 const score = () => Math.floor(state.distance) + state.smash * 20;
 
 function startGame() {
-  Object.assign(state, { running: true, x: 0, y: 0, z: 0, vy: 0, vx: 0, speed: 12, distance: 0, smash: 0, invincible: 0, grounded: true, onFloor: true, roll: 0 });
+  Object.assign(state, { running: true, x: 0, y: 0, z: 0, vy: 0, vx: 0, speed: 12, distance: 0, smash: 0, invincible: 0, grounded: true, onFloor: true, roll: 0, slip: 0 });
   resetWorld();
   $('title').classList.add('hidden');
   $('over').classList.add('hidden');
@@ -166,7 +184,7 @@ function gameOver() {
   const sc = score();
   if (sc > best) { best = sc; lsSet('catball-best', best); }
   const here = rooms.reduce((a, r) => (Math.abs(r.z - state.z) < Math.abs(a.z - state.z) ? r : a)).info.scene.name;
-  $('result').innerHTML = `${here}でゴツン！<br>きょり ${Math.floor(state.distance)}m ／ こわした物 ${state.smash}こ<br>スコア ${sc}`;
+  $('result').innerHTML = `${here}で${state.cause}<br>きょり ${Math.floor(state.distance)}m ／ こわした物 ${state.smash}こ<br>スコア ${sc}`;
   $('best').textContent = `ベスト ${best}`;
   $('over').classList.remove('hidden');
   sfx(400, .15); sfx(300, .2, .15); sfx(200, .35, .35);
@@ -238,6 +256,26 @@ function noiseSfx(dur = .35, cutoff = 1800, vol = .35) {
     src.connect(f).connect(g).connect(ac.destination); src.start();
   } catch {}
 }
+
+// 仕掛け用の効果音
+const sfxSet = {
+  vacuum() { noiseSfx(1.4, 500, .25); sfx(110, 1.2, 0, 'sawtooth', .05); },
+  hiss() { // シャーッ
+    try {
+      const ac = audio(), len = ac.sampleRate * .7;
+      const buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.min(1, i / (len * .1)) * Math.pow(1 - i / len, 1.5);
+      const src = ac.createBufferSource(); src.buffer = buf;
+      const f = ac.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 2500;
+      const g = ac.createGain(); g.gain.value = .5;
+      src.connect(f).connect(g).connect(ac.destination); src.start();
+    } catch {}
+  },
+  bark() { sfx(320, .12, 0, 'sawtooth', .12); sfx(260, .16, .05, 'square', .08); sfx(330, .12, .3, 'sawtooth', .12); sfx(270, .16, .35, 'square', .08); },
+  splash() { noiseSfx(.3, 3000, .25); sfx(900, .08, 0, 'sine', .08); sfx(600, .1, .06, 'sine', .06); },
+};
+const tickCtx = { state, sfx: sfxSet };
+const HAZARD_MSG = { vacuum: '掃除機に吸いこまれた！', cat: '先輩ネコに「シャーッ」とされた！', dog: '犬にぶつかって起こしてしまった！' };
 
 // ---------- 入力 ----------
 addEventListener('keydown', (e) => {
@@ -316,8 +354,9 @@ function updateDebris(dt) {
 }
 
 // ライフは1つ：ぶつかったら一発アウト
-function hurt() {
-  if (!state.running) return;
+function hurt(cause) {
+  if (!state.running || window.__catball?.god) return; // god はテスト用
+  state.cause = cause || 'ゴツン！';
   state.running = false;
   state.crashed = true;
   state.shake = 0.5;
@@ -344,6 +383,7 @@ function update(dt) {
     // 左右移動（猫用扉の手前では自動で扉に向かう）
     let targetVx = ((input.right ? 1 : 0) - (input.left ? 1 : 0)) * 9;
     if (input.dragX !== null) targetVx = THREE.MathUtils.clamp((input.dragX - state.x) * 8, -12, 12);
+    if (state.slip > 0) { state.slip -= dt; targetVx = state.vx; } // 濡れた床でつるーっ
     const guide = toDoor > 0 && toDoor < 12;
     if (guide) targetVx = THREE.MathUtils.clamp((part.fx - state.x) * 6, -14, 14);
     state.vx += (targetVx - state.vx) * Math.min(1, dt * (guide ? 14 : 10));
@@ -378,6 +418,19 @@ function update(dt) {
     state.invincible = Math.max(0, state.invincible - dt);
     for (const o of obstacles) {
       if (o.dead || Math.abs(o.z - state.z) > o.d / 2 + 2) continue;
+      if (o.kind === 'puddle') {
+        if (state.onFloor && !(state.slip > 0) && Math.abs(state.x - o.x) < o.w / 2 && Math.abs(state.z - o.z) < o.d / 2) {
+          state.slip = 0.9;
+          state.vx = (state.vx >= 0 ? 1 : -1) * (Math.random() < .3 ? -1 : 1) * rand(6, 9);
+          sfxSet.splash();
+        }
+        continue;
+      }
+      if (o.kind === 'hazard') {
+        if (hitsBox(o, BALL_R * 0.85)) hurt(HAZARD_MSG[o.gimmick]);
+        if (!state.running) break;
+        continue;
+      }
       if (o.kind === 'platform') {
         if (state.y >= o.h - 0.05 || !hitsBox(o, BALL_R * 0.8)) continue;
         if (!state.onFloor && state.y + 1.0 > o.h) {
@@ -403,6 +456,9 @@ function update(dt) {
       if (!state.running) break;
     }
     obstacles = obstacles.filter(o => !o.dead);
+
+    // 仕掛けの動き
+    for (const o of obstacles) if (o.tick) o.tick(o, dt, tickCtx);
 
     // ルンバは左右にうろうろ
     for (const o of obstacles) {

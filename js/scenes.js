@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { SEG_LEN, HALF_W, WALL_H, FLAP_W, FLAP_H, M, mat, box, plane, group, rand, pick } from './util.js';
 import * as T from './textures.js';
 import * as F from './furniture.js';
+import * as G from './gimmicks.js';
 
 // ---------- 場面の定義 ----------
 // segs: 部屋セグメント（24ユニット）いくつ分続くか
@@ -36,6 +37,7 @@ export const SCENES = [
     wallItems: [F.wallDoor, F.wallDoor, () => F.wallPicture(), () => F.wallWindow()],
     obstacles: [F.roomba, F.plant, F.laundryPile, F.laundryBasket, F.cardboard, F.vacuum],
     platforms: [F.chest], platformRate: .3,
+    gimmicks: [G.vacuumChaser], gimmickRate: .6,
     smalls: [F.vase, F.goldfishBowl, F.piggyBank, F.smallPlant, F.phone, F.photoFrame],
   },
   {
@@ -45,6 +47,7 @@ export const SCENES = [
     wallItems: [F.shoji, F.chadansu, F.tvBoard, F.wallClock, F.fusuma],
     obstacles: [F.fan, F.fan, F.laundryPile, F.plant, F.mikanBox, F.zabutonStack, F.zaisu],
     platforms: [F.chabudai, F.kotatsu], platformRate: .45,
+    gimmicks: [G.sleepingCat], gimmickRate: .6,
     smalls: [F.dishes, F.yunomi, F.kyusu, F.goldfishBowl, F.mikanBasket, F.vase],
   },
   {
@@ -76,6 +79,7 @@ export const SCENES = [
     obstacles: [F.roomba, () => F.diningChair(), F.plant, F.kitchenWagon, F.cardboard, F.pedalBin],
     platforms: [F.diningTable, F.island], platformRate: .45,
     barriers: [F.kitchenCounter], barrierRate: .8,
+    gimmicks: [G.puddle], gimmickRate: .8,
     smalls: [F.dishes, F.dishes, F.pot, F.fruitBowl, F.mug, F.smallPlant],
   },
   {
@@ -88,6 +92,7 @@ export const SCENES = [
     wallItems: [F.fireplace, () => F.bookshelf(true), () => F.wallPicture(0, true), F.glassCabinet, () => F.wallWindow(0, true)],
     obstacles: [F.pedestalVase, F.plant, F.globe, F.roomba, F.armchair, F.grandfatherClock, () => F.floorLamp(true)],
     platforms: [F.coffeeTable, F.sofa, F.sideboard], platformRate: .45,
+    gimmicks: [G.sleepingDog], gimmickRate: .6,
     smalls: [F.teaSet, F.vase, F.goldfishBowl, F.piggyBank, F.candlestick, F.dishes],
   },
 ];
