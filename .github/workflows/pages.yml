@@ -2,7 +2,7 @@ name: GitHub Pages
 
 on:
   push:
-    branches: [main, claude/festive-cori-7id1dj]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
