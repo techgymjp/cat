@@ -41,6 +41,8 @@
   .scenes img { width: 100%; border-radius: 8px; border: 1px solid var(--line); display: block; }
   .scenes figcaption { font-size: 14px; text-align: center; margin-top: 4px; }
   .order { font-weight: bold; color: var(--accent-dark); }
+  .rooms { columns: 2 260px; column-gap: 24px; font-size: 14px; }
+  .rooms li { break-inside: avoid; margin-bottom: 4px; }
   .tip { background: #fff4d6; border-left: 5px solid var(--spark); padding: 8px 12px; border-radius: 8px; margin: 10px 0; }
   .gimmicks { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
   .gimmicks .box img { width: 100%; border-radius: 8px; display: block; margin-bottom: 8px; }
@@ -158,8 +160,22 @@
 
 <section id="scenes">
   <h2><span class="num">8</span>場面の順番</h2>
-  <p class="order">玄関 → 廊下 → 茶の間 → 和室 → 洋室 → キッチン → 洋風応接室</p>
-  <p>洋風応接室のあとは、廊下からくり返します。</p>
+  <p class="order">玄関 → 廊下 → 茶の間 → 縁側 → 和室 → 洋室 → 子ども部屋 → 書斎 → 秘密のホビールーム → キッチン → ホームバー → カラオケルーム → ビリヤード室 → 卓球ルーム → 煉瓦の暖炉部屋 → 洋風応接室 → 音楽室 → 室内花壇 → 屋根裏部屋</p>
+  <p>屋根裏部屋のあとは、廊下からくり返します。全部で19の場面があります。</p>
+  <ul class="rooms">
+    <li><b>縁側</b>：庭が見えるガラス戸。盆栽・蚊取り線香は壊せる。将棋盤に注意</li>
+    <li><b>子ども部屋</b>：カラフルな床と二段ベッド。積み木の塔は壊せる。木馬・おもちゃ箱に注意</li>
+    <li><b>書斎</b>：本棚だらけ。低い書架が通せんぼ。本の山に注意</li>
+    <li><b>秘密のホビールーム</b>：書斎の本棚の隠し扉から入る。フィギュアは壊せる。鉄道模型の台に乗れる</li>
+    <li><b>ホームバー</b>：バーカウンターが通せんぼ。グラスやボトルは壊せる。バースツールに注意</li>
+    <li><b>カラオケルーム</b>：ミラーボールと大画面。タンバリン・マラカスは壊せる。マイクスタンド・スピーカーに注意</li>
+    <li><b>ビリヤード室</b>：ビリヤード台に乗れる。台の上のボールは壊せる。キュー立てに注意</li>
+    <li><b>卓球ルーム</b>：卓球台に乗れる（横向きは通せんぼ）。ボールのかごは壊せる</li>
+    <li><b>煉瓦の暖炉部屋</b>：レンガの壁と大きな暖炉。ランタン・置物は壊せる。薪の山・ロッキングチェアに注意</li>
+    <li><b>音楽室</b>：グランドピアノに乗れる。メトロノームは壊せる。譜面台・チェロケースに注意</li>
+    <li><b>室内花壇</b>：ガラス張りのサンルーム。植木鉢・じょうろは壊せる。レンガの花壇が通せんぼ</li>
+    <li><b>屋根裏部屋</b>：傾いた屋根と梁。ランタンは壊せる。古いトランク・木箱の山・木馬に注意</li>
+  </ul>
   <div class="scenes">
     <figure><img src="img/scene_genkan.jpg" alt="玄関" onerror="this.parentNode.remove()"><figcaption>玄関</figcaption></figure>
     <figure><img src="img/scene_rouka.jpg" alt="廊下" onerror="this.parentNode.remove()"><figcaption>廊下</figcaption></figure>

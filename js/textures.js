@@ -235,3 +235,71 @@ export function fabric(color, stripe) {
 export function makeMat(tex, opts = {}) {
   return new THREE.MeshStandardMaterial({ map: tex, roughness: .85, ...opts });
 }
+
+// ============ 追加の部屋用 ============
+export function brick(base = '#9a4a32') {
+  return canvasTex(256, 256, (g, w, h) => {
+    g.fillStyle = '#cdbfa8'; g.fillRect(0, 0, w, h); // 目地
+    const bh = 32, bw = 64;
+    for (let r = 0; r < h / bh; r++) {
+      for (let c = -1; c < w / bw + 1; c++) {
+        const x = c * bw + (r % 2) * bw / 2, y = r * bh;
+        const l = 30 + Math.random() * 14;
+        g.fillStyle = `hsl(${12 + Math.random() * 10}, ${45 + Math.random() * 15}%, ${l}%)`;
+        g.fillRect(x + 3, y + 3, bw - 6, bh - 6);
+      }
+    }
+    noise(g, w, h, 0, .15, 2);
+  }, 6, 2.5);
+}
+export function terracotta() {
+  return canvasTex(512, 512, (g, w, h) => {
+    g.fillStyle = '#b9a58c'; g.fillRect(0, 0, w, h);
+    const n = 4, s = w / n;
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      g.fillStyle = `hsl(${18 + Math.random() * 8}, ${50 + Math.random() * 12}%, ${44 + Math.random() * 10}%)`;
+      g.fillRect(x * s + 4, y * s + 4, s - 8, s - 8);
+    }
+    noise(g, w, h, 0, .12, 2);
+  }, 3, 6);
+}
+export function plankWall(light = 52) {
+  return canvasTex(512, 256, (g, w, h) => {
+    for (let x = 0; x < w; x += 32) {
+      g.fillStyle = `hsl(30, ${30 + Math.random() * 10}%, ${light + (Math.random() - .5) * 10}%)`; g.fillRect(x, 0, 32, h);
+      g.strokeStyle = 'rgba(60,30,10,.25)';
+      for (let k = 0; k < 3; k++) { const xx = x + 4 + Math.random() * 24; g.beginPath(); g.moveTo(xx, 0); g.bezierCurveTo(xx + 4, h * .3, xx - 4, h * .6, xx, h); g.stroke(); }
+      g.fillStyle = 'rgba(40,20,5,.5)'; g.fillRect(x, 0, 2, h);
+      if (Math.random() < .5) { g.fillStyle = 'rgba(40,20,5,.6)'; g.beginPath(); g.arc(x + 16, Math.random() * h, 3, 0, 7); g.fill(); }
+    }
+  }, 6, 2);
+}
+export function kidsFloor() {
+  return canvasTex(512, 512, (g, w, h) => {
+    const cols = ['#f2c14e', '#5fb0d6', '#ef8a7a', '#8cc97a', '#b99be0', '#f4f1ea'];
+    const n = 4, s = w / n;
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { g.fillStyle = cols[(x + y * 2) % cols.length]; g.fillRect(x * s, y * s, s, s); }
+    g.strokeStyle = 'rgba(0,0,0,.12)'; g.lineWidth = 3;
+    for (let i = 0; i <= n; i++) { g.beginPath(); g.moveTo(i * s, 0); g.lineTo(i * s, h); g.stroke(); g.beginPath(); g.moveTo(0, i * s); g.lineTo(w, i * s); g.stroke(); }
+    noise(g, w, h, 0, .06, 2);
+  }, 2.5, 5);
+}
+export function stripeWall(a, b) {
+  return canvasTex(256, 256, (g, w, h) => {
+    g.fillStyle = a; g.fillRect(0, 0, w, h);
+    g.fillStyle = b; for (let x = 0; x < w; x += 64) g.fillRect(x, 0, 28, h);
+    noise(g, w, h, 0, .05, 1);
+  }, 8, 2.5);
+}
+export function feltGreen() {
+  return canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#1f6b46'; g.fillRect(0, 0, w, h); noise(g, w, h, 0, .15, 1); }, 4, 4);
+}
+export function sheetMusic() {
+  return canvasTex(128, 160, (g, w, h) => {
+    g.fillStyle = '#f7f3e8'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#333'; g.lineWidth = 1;
+    for (let s = 0; s < 6; s++) for (let l = 0; l < 5; l++) { const y = 18 + s * 24 + l * 3; g.beginPath(); g.moveTo(8, y); g.lineTo(w - 8, y); g.stroke(); }
+    g.fillStyle = '#222';
+    for (let s = 0; s < 6; s++) for (let k = 0; k < 7; k++) { g.beginPath(); g.ellipse(16 + k * 15, 18 + s * 24 + Math.random() * 12, 3, 2, -.4, 0, 7); g.fill(); }
+  });
+}

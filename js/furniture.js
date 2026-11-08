@@ -732,9 +732,10 @@ export function laundryPile() {
 
 // ============ 壁ぎわに置く家具 ============
 // 床置き家具（原点が底面中央）を、壁ぎわ家具の座標（壁面が x=0、部屋側が +x）に変換する
-export function asWall(make, turn = false) {
+export function asWall(make, turn = false, flip = false) {
   return () => {
     const o = make(99);
+    if (flip) o.mesh.rotation.y = Math.PI; // 背もたれを壁側に
     const g = new THREE.Group();
     if (turn) { o.mesh.rotation.y = -Math.PI / 2; o.mesh.position.x = o.d / 2 + .05; }
     else { o.mesh.position.x = o.w / 2 + .05; }
