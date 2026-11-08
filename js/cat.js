@@ -51,9 +51,16 @@ function addFur(parent, geo, len) {
 }
 
 // ---------- 模様（頂点カラー） ----------
-const ORANGE = new THREE.Color('#e0812f');
-const DARK = new THREE.Color('#9a4a14');
-const CREAM = new THREE.Color('#f7ecdc');
+// 毛色（createCat の最初に palette の色をセットしてから塗る）
+export const CHATORA = { base: '#e0812f', dark: '#9a4a14', cream: '#f7ecdc', paw: '#f7ecdc', stripe: 0.85, freq: 1, nose: 0xd98a8a };
+// キジトラ：灰色がかった茶色に黒い縞。口元・あご・お腹は明るいベージュ、足先は地の色
+export const KIJITORA = { base: '#8c7b62', dark: '#231c16', cream: '#b9a688', paw: '#8a7860', stripe: 0.95, freq: 1.25, nose: 0xb4675a };
+const ORANGE = new THREE.Color(), DARK = new THREE.Color(), CREAM = new THREE.Color(), PAW = new THREE.Color();
+let STRIPE = 0.85, FREQ = 1;
+function usePalette(pal) {
+  ORANGE.set(pal.base); DARK.set(pal.dark); CREAM.set(pal.cream); PAW.set(pal.paw);
+  STRIPE = pal.stripe; FREQ = pal.freq;
+}
 const tmp = new THREE.Color();
 
 function paint(geo, fn, offset = new THREE.Vector3()) {
@@ -76,9 +83,9 @@ const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a
 function tabby(stripeAxis = 'z', freq = 13) {
   return (p, n, c) => {
     const along = stripeAxis === 'z' ? p.z : stripeAxis === 'x' ? p.x : p.y;
-    const s = Math.sin(along * freq + Math.sin(p.y * 7 + p.x * 3) * 0.9);
+    const s = Math.sin(along * freq * FREQ + Math.sin(p.y * 7 + p.x * 3) * 0.9);
     const stripe = smooth(0.25, 0.65, s) * smooth(-0.35, 0.1, n.y);
-    c.copy(ORANGE).lerp(DARK, stripe * 0.85);
+    c.copy(ORANGE).lerp(DARK, stripe * STRIPE);
     const belly = smooth(-0.15, -0.55, n.y);
     c.lerp(CREAM, belly);
   };
@@ -115,7 +122,7 @@ function tailGeo(points, r0, r1, n = 22) {
   for (let i = 0; i < pos.count; i++) {
     const t = Math.floor(i / per) / n;
     const ring = smooth(0.2, 0.6, Math.sin(t * 26));
-    tmp.copy(ORANGE).lerp(DARK, ring * 0.85);
+    tmp.copy(ORANGE).lerp(DARK, ring * STRIPE);
     if (t > 0.92) tmp.lerp(DARK, 0.6);
     cols[i * 3] = tmp.r; cols[i * 3 + 1] = tmp.g; cols[i * 3 + 2] = tmp.b;
   }
@@ -173,8 +180,8 @@ function addWhiskers(parent, x, y, z) {
   }
   parent.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), FACE.whisker));
 }
-function addNoseEars(parent, nose, ears) {
-  const n = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 10), FACE.nose);
+function addNoseEars(parent, nose, ears, noseMat = FACE.nose) {
+  const n = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 10), noseMat);
   n.scale.set(1.3, 0.75, 0.7); n.position.copy(nose); parent.add(n);
   for (const [x, y, z, side] of ears) {
     const e = new THREE.Mesh(new THREE.ConeGeometry(0.085, 0.2, 12), FACE.earIn);
@@ -184,7 +191,9 @@ function addNoseEars(parent, nose, ears) {
 }
 
 // ============ ネコ本体 ============
-export function createCat() {
+export function createCat(pal = CHATORA) {
+  usePalette(pal);
+  const noseMat = new THREE.MeshStandardMaterial({ color: pal.nose, roughness: 0.45 });
   const cat = new THREE.Group();
 
   // ---------- 丸まった姿（床の上でころがる） ----------
@@ -201,8 +210,8 @@ export function createCat() {
       paint(S(0.11, 0, headY - 0.14, headZ - 0.22, 1.25, 0.8, 0.9), (p, n, c) => c.copy(CREAM)),
       paint(EAR(-0.17, headY + 0.3, headZ + 0.03, -1), (p, n, c) => c.copy(ORANGE)),
       paint(EAR(0.17, headY + 0.3, headZ + 0.03, 1), (p, n, c) => c.copy(ORANGE)),
-      paint(S(0.12, -0.15, -0.2, -0.6, 1, 0.65, 1.3, 16), (p, n, c) => c.copy(CREAM)), // 前足
-      paint(S(0.12, 0.15, -0.2, -0.6, 1, 0.65, 1.3, 16), (p, n, c) => c.copy(CREAM)),
+      paint(S(0.12, -0.15, -0.2, -0.6, 1, 0.65, 1.3, 16), (p, n, c) => c.copy(PAW)), // 前足
+      paint(S(0.12, 0.15, -0.2, -0.6, 1, 0.65, 1.3, 16), (p, n, c) => c.copy(PAW)),
     ];
     addFur(ballSpin, mergeGeometries(parts), 0.045);
     // からだに巻きつくしっぽ
@@ -210,7 +219,7 @@ export function createCat() {
     for (let i = 0; i <= 8; i++) { const a = Math.PI * 0.55 + i * 0.2; tp.push(new THREE.Vector3(Math.cos(a) * 0.6, -0.28 + Math.sin(i * 0.4) * 0.05, -Math.sin(a) * 0.55)); }
     addFur(ballSpin, tailGeo(tp.reverse(), 0.12, 0.08), 0.04);
     addEyes(ballSpin, headY + 0.03, headZ - 0.25, 0.12, false);
-    addNoseEars(ballSpin, new THREE.Vector3(0, headY - 0.1, headZ - 0.33), [[-0.17, headY + 0.3, headZ + 0.03, -1], [0.17, headY + 0.3, headZ + 0.03, 1]]);
+    addNoseEars(ballSpin, new THREE.Vector3(0, headY - 0.1, headZ - 0.33), [[-0.17, headY + 0.3, headZ + 0.03, -1], [0.17, headY + 0.3, headZ + 0.03, 1]], noseMat);
     addWhiskers(ballSpin, 0.07, headY - 0.12, headZ - 0.3);
   }
   cat.add(ballForm);
@@ -235,8 +244,12 @@ export function createCat() {
     ];
     addFur(catForm, mergeGeometries(body), 0.04);
     addEyes(catForm, 0.55, -1.24, 0.135, true);
-    addNoseEars(catForm, new THREE.Vector3(0, 0.43, -1.29), [[-0.18, 0.8, -0.9, -1], [0.18, 0.8, -0.9, 1]]);
+    addNoseEars(catForm, new THREE.Vector3(0, 0.43, -1.29), [[-0.18, 0.8, -0.9, -1], [0.18, 0.8, -0.9, 1]], noseMat);
     addWhiskers(catForm, 0.09, 0.39, -1.22);
+    const mouth = new THREE.Mesh(new THREE.SphereGeometry(0.08, 14, 10), new THREE.MeshStandardMaterial({ color: 0x5a1e22, roughness: 0.6 }));
+    mouth.scale.set(1.2, 0.8, 0.5); mouth.position.set(0, 0.3, -1.26); mouth.visible = false;
+    catForm.add(mouth);
+    catForm.userData.mouth = mouth;
   }
   // 足（付け根を軸に動かす）
   const legs = [];
@@ -247,11 +260,11 @@ export function createCat() {
     const off = new THREE.Vector3(x, y, z);
     const parts = front ? [
       paint(CAP(0.11, 0.38, 0, -0.32, 0), tabby('y', 22), off),
-      paint(S(0.12, 0, -0.66, -0.05, 1, 0.55, 1.3, 16), (p, n, c) => c.copy(CREAM), off),
+      paint(S(0.12, 0, -0.66, -0.05, 1, 0.55, 1.3, 16), (p, n, c) => c.copy(PAW), off),
     ] : [
       paint(S(0.24, 0, -0.08, 0.04, 0.72, 1.2, 1.1), tabby('y', 18), off),
       paint(CAP(0.09, 0.3, 0, -0.42, 0.1, -0.25), tabby('y', 22), off),
-      paint(S(0.12, 0, -0.68, 0.02, 1, 0.55, 1.3, 16), (p, n, c) => c.copy(CREAM), off),
+      paint(S(0.12, 0, -0.68, 0.02, 1, 0.55, 1.3, 16), (p, n, c) => c.copy(PAW), off),
     ];
     addFur(pivot, mergeGeometries(parts), 0.03);
     const pad = new THREE.Mesh(new THREE.CircleGeometry(0.07, 12), FACE.pad);

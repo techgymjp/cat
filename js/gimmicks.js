@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { M, mat, box, cyl, sphere, group, rand, pick, PLAY_X } from './util.js';
+import { createCat, KIJITORA } from './cat.js';
 
 // 部屋ごとの仕掛け。
 // kind: 'hazard' … 触れたらアウト（上をジャンプで越えるのはOK）
@@ -31,38 +32,41 @@ export function vacuumChaser() {
   };
 }
 
-// ---------- 茶の間：座布団で寝ている先輩ネコ ----------
+// ---------- 茶の間：座布団で寝ている先輩ネコ（キジトラ） ----------
 export function sleepingCat() {
-  const furC = pick([0x8a8a8a, 0x3a3a3a, 0xf2efe8, 0x6b4a32]);
-  const fur = mat(furC, { roughness: .9 });
-  const g = group(box(1.9, .22, 1.9, mat(pick([0x6a3b5a, 0x7a4a2a, 0x2f4d6b]), { roughness: 1 }), 0, .11, 0));
-  const cat = new THREE.Group(); cat.position.y = .22; g.add(cat);
-  const body = sphere(.55, fur, 0, .38, 0); body.scale.set(1.2, .7, 1); cat.add(body);
-  const head = new THREE.Group(); head.position.set(-.55, .42, -.35); cat.add(head);
-  head.add(sphere(.3, fur));
-  const ears = [];
-  for (const z of [-.15, .15]) { const e = new THREE.Mesh(new THREE.ConeGeometry(.1, .2, 4), fur); e.position.set(0, .28, z); head.add(e); ears.push(e); }
-  const eyeM = mat(0x111111);
-  const eyes = [];
-  for (const z of [-.12, .12]) { const e = box(.02, .02, .1, eyeM, -.27, .05, z); head.add(e); eyes.push(e); }
-  const tail = new THREE.Mesh(new THREE.TorusGeometry(.6, .07, 6, 18, Math.PI), fur); tail.rotation.x = Math.PI / 2; tail.position.y = .2; cat.add(tail);
+  const g = group(box(2.1, .22, 2.1, mat(pick([0x6a3b5a, 0x7a4a2a, 0x2f4d6b]), { roughness: 1 }), 0, .11, 0));
+  const senior = createCat(KIJITORA);
+  const S = 1.25; // プレイヤーより大きい先輩
+  senior.cat.scale.setScalar(S);
+  senior.cat.rotation.y = Math.PI; // 顔をこちらに向ける
+  senior.cat.position.y = .22 + .62 * S;
+  senior.ballForm.visible = true;
+  senior.catForm.visible = false;
+  senior.ballSpin.rotation.x = .25; // 少し顔を上げて寝ている
+  g.add(senior.cat);
   return {
-    mesh: g, w: 2.0, h: .9, d: 2.0, kind: 'hazard', gimmick: 'cat',
+    mesh: g, w: 2.0, h: 1.5, d: 2.0, kind: 'hazard', gimmick: 'cat',
     tick(o, dt, { state, sfx }) {
       const t = performance.now() / 1000;
       if (!o.awake) {
-        body.scale.y = .7 + Math.sin(t * 2) * .03; // すやすや
+        senior.ballForm.scale.set(1, 1 + Math.sin(t * 2) * .025, 1); // すやすや
         const dz = state.z - o.z;
         if (state.running && dz > 0 && dz < 7 && state.y < .5 && Math.abs(state.x - o.x) < 3.5) { // ボールの音で起きる
-          o.awake = true; o.w = 3.6; o.h = 1.6; sfx.hiss();
-          eyes.forEach(e => { e.scale.set(1, 4, 1); e.material = mat(0xd8c020, { emissive: 0x806000 }); });
+          o.awake = true; o.w = 3.6; o.h = 2.4; sfx.hiss();
+          senior.ballForm.visible = false;
+          senior.catForm.visible = true;
+          senior.catForm.userData.mouth.visible = true;
         }
       } else {
         o.puff = Math.min(1, (o.puff || 0) + dt * 6);
-        cat.scale.setScalar(1 + o.puff * .45);           // 毛を逆立てて大きくなる
-        body.scale.y = .7 + o.puff * .5;
-        ears.forEach((e, i) => { e.rotation.x = (i ? 1 : -1) * 1.1 * o.puff; });
-        head.position.y = .42 + o.puff * .3;
+        const p = o.puff;
+        // 背中を丸めて毛を逆立て、ひとまわり大きくなる
+        senior.catForm.scale.set(1 + p * .25, 1 + p * .35, 1 + p * .1);
+        senior.catForm.rotation.x = -p * .12;
+        senior.cat.position.y = .22 + .74 * S * (1 + p * .35); // 足が座布団にめりこまないように
+        senior.tail.rotation.x = p * 1.2; senior.tail.scale.setScalar(1 + p * .4);
+        senior.legs.forEach(l => { l.rotation.x = 0; l.rotation.z = 0; });
+        senior.catForm.position.x = Math.sin(t * 40) * .02 * p; // ぷるぷる
       }
     },
   };
