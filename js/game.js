@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { SEG_LEN, SEG_COUNT, HALF_W, PLAY_X, LANES, FLAP_W, pick, rand, disposeTree } from './util.js';
-import { sceneAt, buildRoom } from './scenes.js';
+import { SCENES, sceneAt, buildRoom } from './scenes.js';
 import { createCat, BALL_R } from './cat.js';
 import { startBgm, stopBgm, setBgmTempo, toggleMute, isMuted } from './bgm.js';
 
@@ -215,6 +215,8 @@ let best = Number(lsGet('catball-best') || 0);
 const score = () => Math.floor(state.distance) + state.smash * 20;
 
 function startGame() {
+  if (!ready) return;
+  prepareSounds();
   Object.assign(state, { running: true, x: 0, y: 0, z: 0, vy: 0, vx: 0, speed: 12, distance: 0, smash: 0, invincible: 0, grounded: true, onFloor: true, roll: 0, slip: 0 });
   resetWorld();
   $('title').classList.add('hidden');
@@ -291,12 +293,32 @@ function meow() {
     src.start(t); vib.start(t); src.stop(t + dur + .02); vib.stop(t + dur + .02);
   } catch {}
 }
+// ノイズの音データは長さごとに1回だけ作って使い回す
+const noiseBufs = {};
+function noiseBuf(dur, shape = 'decay') {
+  const key = shape + dur;
+  if (!noiseBufs[key]) {
+    const ac = audio(), len = Math.floor(ac.sampleRate * dur);
+    const buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) {
+      d[i] = (Math.random() * 2 - 1) * (shape === 'hiss' ? Math.min(1, i / (len * .1)) * Math.pow(1 - i / len, 1.5) : Math.pow(1 - i / len, 2));
+    }
+    noiseBufs[key] = buf;
+  }
+  return noiseBufs[key];
+}
+function prepareSounds() {
+  try {
+    const ac = audio();
+    if (ac.state === 'suspended') ac.resume();
+    for (const d of [.35, .25, .15, .3, 1.4]) noiseBuf(d);
+    noiseBuf(.7, 'hiss');
+  } catch {}
+}
 function noiseSfx(dur = .35, cutoff = 1800, vol = .35) {
   try {
-    const ac = audio(), len = ac.sampleRate * dur;
-    const buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
-    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2);
-    const src = ac.createBufferSource(); src.buffer = buf;
+    const ac = audio();
+    const src = ac.createBufferSource(); src.buffer = noiseBuf(dur);
     const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = cutoff;
     const g = ac.createGain(); g.gain.value = vol;
     src.connect(f).connect(g).connect(ac.destination); src.start();
@@ -308,10 +330,8 @@ const sfxSet = {
   vacuum() { noiseSfx(1.4, 500, .25); sfx(110, 1.2, 0, 'sawtooth', .05); },
   hiss() { // シャーッ
     try {
-      const ac = audio(), len = ac.sampleRate * .7;
-      const buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
-      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.min(1, i / (len * .1)) * Math.pow(1 - i / len, 1.5);
-      const src = ac.createBufferSource(); src.buffer = buf;
+      const ac = audio();
+      const src = ac.createBufferSource(); src.buffer = noiseBuf(.7, 'hiss');
       const f = ac.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 2500;
       const g = ac.createGain(); g.gain.value = .5;
       src.connect(f).connect(g).connect(ac.destination); src.start();
@@ -328,7 +348,7 @@ addEventListener('keydown', (e) => {
   if (['ArrowLeft', 'a', 'A'].includes(e.key)) input.left = true;
   if (['ArrowRight', 'd', 'D'].includes(e.key)) input.right = true;
   if ([' ', 'ArrowUp', 'w', 'W'].includes(e.key)) { input.jumpQueued = true; e.preventDefault(); }
-  if (e.key === 'Enter' && !state.running && !state.crashed) startGame();
+  if (e.key === 'Enter' && ready && !state.running && !state.crashed) startGame();
 });
 addEventListener('keyup', (e) => {
   if (['ArrowLeft', 'a', 'A'].includes(e.key)) input.left = false;
@@ -627,9 +647,48 @@ addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight);
 });
 
+// ---------- スタート前の準備 ----------
+// 全場面の部屋・家具・仕掛け・ネコ・目印を一度だけ裏で描き、シェーダーの準備と画像の転送を先に済ませる。
+// （プレイ中に初めて見る物が出たときの一瞬の停止を防ぐ）
+let ready = false;
+async function warmUp() {
+  const btn = $('startBtn');
+  btn.disabled = true; btn.textContent = 'じゅんび中…';
+  await new Promise(r => setTimeout(r, 50));
+  const temp = new THREE.Group();
+  SCENES.forEach((sc, i) => {
+    const prev = SCENES[(i + SCENES.length - 1) % SCENES.length];
+    temp.add(buildRoom({ scene: sc, segIdx: 0, isStart: true, isEnd: false, prevScene: prev }, 0).group);
+    if (sc.id === 'genkan') temp.add(buildRoom({ scene: sc, segIdx: 1, isStart: false, isEnd: true, prevScene: sc }, 0).group);
+    for (const list of [sc.obstacles, sc.platforms, sc.smalls, sc.barriers || [], sc.gimmicks || []]) {
+      for (const make of list) temp.add(make(4).mesh);
+    }
+  });
+  const mk = { x: 0, y0: 0, z: 0, w: 1, h: 1, d: 1 };
+  addMarker(mk);
+  const dust = new THREE.Mesh(dustGeo, dustMat); temp.add(dust);
+  ballForm.visible = catForm.visible = true;
+  scene.add(temp);
+  scene.traverse(o => { o.userData.fc = o.frustumCulled; o.frustumCulled = false; });
+  try { if (renderer.compileAsync) await renderer.compileAsync(scene, camera); } catch {}
+  // 1ピクセルだけ描いて、画像の転送も済ませる（画面には出ない）
+  renderer.setScissorTest(true);
+  renderer.setScissor(0, 0, 1, 1);
+  renderer.render(scene, camera);
+  renderer.setScissorTest(false);
+  scene.traverse(o => { if (o.userData.fc !== undefined) { o.frustumCulled = o.userData.fc; delete o.userData.fc; } });
+  scene.remove(temp);
+  temp.remove(dust); // 破片の形は使い回すので捨てない
+  disposeTree(temp);
+  removeMarker(mk);
+  ready = true;
+  btn.disabled = false; btn.textContent = 'スタート';
+}
+
 resetWorld();
 camera.position.set(0, 2.8, 5.5);
 animate();
+warmUp();
 
 // テスト用フック
 window.__catball = { state, startGame, obstacles: () => obstacles, rooms: () => rooms };

@@ -33,6 +33,7 @@ const freq = (m) => 440 * Math.pow(2, (m - 69) / 12);
 
 let ac = null, master = null, timer = null, step = 0, nextTime = 0, tempo = 150, playing = false;
 let muted = false;
+let snareBuf = null; // 小太鼓の音は1回だけ作って使い回す
 try { muted = localStorage.getItem('catball-mute') === '1'; } catch {}
 
 function note(type, f, t, dur, vol) {
@@ -58,9 +59,12 @@ function playStep(s, t) {
   }
   // 小太鼓っぽいリズム
   if (s % 4 === 2) {
-    const len = ac.sampleRate * 0.05, buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
-    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
-    const src = ac.createBufferSource(); src.buffer = buf;
+    if (!snareBuf) {
+      const len = ac.sampleRate * 0.05; snareBuf = ac.createBuffer(1, len, ac.sampleRate);
+      const d = snareBuf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    }
+    const src = ac.createBufferSource(); src.buffer = snareBuf;
     const g = ac.createGain(); g.gain.value = 0.05;
     const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 2000;
     src.connect(hp).connect(g).connect(master); src.start(t);

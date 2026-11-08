@@ -109,6 +109,7 @@ export function sceneAt(roomIndex) {
 }
 
 // ---------- 猫用扉つきの間仕切り ----------
+const fusumaTex = once('fusumaTex', () => T.fusumaPaper()); // 画像は1枚を使い回す
 // 開口 [fx-FLAP_W/2, fx+FLAP_W/2] × [0, FLAP_H] を空けた板を作る
 function panelWithHole(x0, x1, y0, y1, fx, thick, m, z = 0) {
   const g = new THREE.Group();
@@ -130,7 +131,7 @@ function buildPartition(prevScene, nextScene, fx) {
 
   if (nextScene.japanese) {
     // 襖（ふすま）4枚の間仕切り。その1枚の下に猫用扉。
-    const paper = fade(mat(0xffffff, { map: T.fusumaPaper(), roughness: 1 }));
+    const paper = fade(mat(0xffffff, { map: fusumaTex(), roughness: 1 }));
     const black = fade(M.black), wood = fade(M.woodLight);
     const top = 6.0;
     g.add(panelWithHole(-HALF_W, HALF_W, top, WALL_H, fx, T_, wallM));
