@@ -21,6 +21,13 @@
   .spark { color: #ffe27a; font-weight: bold; }
   .howto { margin-top: 14px; color: #ffe2b8; font-size: 16px; text-decoration: underline; }
   #banner { position: fixed; top: 22%; left: 0; right: 0; text-align: center; color: #fff; font-size: clamp(28px, 7vw, 52px); font-weight: bold; letter-spacing: .1em; text-shadow: 0 3px 0 rgba(90,50,20,.8), 0 6px 18px rgba(0,0,0,.5); opacity: 0; transform: translateY(10px); transition: opacity .4s, transform .4s; pointer-events: none; }
+  #combo { position: fixed; top: 64px; left: 0; right: 0; text-align: center; color: #ffe27a; font-weight: bold; font-size: clamp(22px, 5vw, 34px); text-shadow: 0 3px 0 rgba(120,60,0,.8), 0 0 14px rgba(255,180,40,.6); pointer-events: none; opacity: 0; transition: opacity .2s; }
+  #combo.show { opacity: 1; }
+  #comboBar { display: block; height: 6px; width: 160px; margin: 6px auto 0; border-radius: 3px; background: #ffd34d; transform-origin: left; }
+  #pops { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+  .pop { position: absolute; transform: translate(-50%, 0); color: #fff6c8; font-weight: bold; font-size: 22px; text-shadow: 0 2px 0 rgba(150,70,0,.9); animation: pop 0.9s ease-out forwards; }
+  @keyframes pop { from { opacity: 1; transform: translate(-50%, 0) scale(1.2); } to { opacity: 0; transform: translate(-50%, -60px) scale(1); } }
+  #reach { font-size: 18px; }
   #banner.show { opacity: 1; transform: translateY(0); }
 </style>
 <script type="importmap">
@@ -32,11 +39,13 @@
 </head>
 <body>
 <div id="hud">
-  <div>💥 <span id="smash">0</span>　📏 <span id="dist">0</span>m</div>
+  <div>🚪 <span id="room">1</span>　💥 <span id="smash">0</span>　📏 <span id="dist">0</span>m</div>
   <button id="mute" aria-label="BGMのオン・オフ" data-i18n-aria="mute">🔊</button>
 </div>
 
 <div id="banner"></div>
+<div id="combo"><span id="comboTxt"></span><i id="comboBar"></i></div>
+<div id="pops"></div>
 
 <div id="title" class="screen">
   <button id="langBtn" type="button">English</button>
@@ -44,6 +53,7 @@
   <p data-i18n="intro">まるくなったネコが、玄関から家の奥へどこまでもころがっていく！</p>
   <p data-i18n-html="rules"><span class="spark">✨キラキラ✨</span>している物はぶっ壊してOK！（1こ20点）<br>それ以外の家具・動物・壁にぶつかったら一発アウト！<br>タップでジャンプ。テーブルやイスの上は歩けるよ。<br>部屋のさかいめは猫用扉にねらいを定めて、ボールのままくぐろう！</p>
   <p class="keys" data-i18n-html="keys">PC：← → / A D で左右　クリック / スペースでジャンプ<br>スマホ：左右にドラッグで移動　タップでジャンプ</p>
+  <p id="farthest" class="keys"></p>
   <button id="startBtn" disabled>じゅんび中…</button>
   <a class="howto" href="howto.html" data-i18n="howtoMore" data-i18n-href="howtoUrl">遊び方をくわしく見る</a>
 </div>
@@ -51,6 +61,7 @@
 <div id="over" class="screen hidden">
   <h1 data-i18n="overTitle">ニャーン…</h1>
   <p id="result"></p>
+  <p id="reach"></p>
   <p id="best"></p>
   <button id="retryBtn" data-i18n="retry">もう一回</button>
   <a class="howto" href="howto.html" data-i18n="howto" data-i18n-href="howtoUrl">遊び方</a>

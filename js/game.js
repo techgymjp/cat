@@ -4,6 +4,7 @@ import { SEG_LEN, SEG_COUNT, HALF_W, PLAY_X, LANES, FLAP_W, pick, rand, disposeT
 import { SCENES, sceneAt, buildRoom } from './scenes.js';
 import { createCat, BALL_R } from './cat.js';
 import { t, sceneName, lang, setLang, applyStatic } from './i18n.js';
+const tr = t; // update() の中では t が経過時間の変数名と重なるので別名で使う
 import { startBgm, stopBgm, setBgmTempo, toggleMute, isMuted, prepareBgm } from './bgm.js';
 
 const GRAVITY = 30;
@@ -206,7 +207,8 @@ function nextPartition() {
 
 // ---------- 状態 ----------
 const state = {
-  running: false, x: 0, y: 0, z: 0, vy: 0, vx: 0, speed: 12, distance: 0, smash: 0,
+  running: false, x: 0, y: 0, z: 0, vy: 0, vx: 0, speed: 12, distance: 0, smash: 0, smashPts: 0,
+  combo: 0, comboTimer: 0, maxCombo: 0, room: 1,
   invincible: 0, grounded: true, onFloor: true, roll: 0, shake: 0,
 };
 const input = { left: false, right: false, jumpQueued: false, dragX: null };
@@ -214,12 +216,36 @@ const $ = (id) => document.getElementById(id);
 const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 let best = Number(lsGet('catball-best') || 0);
-const score = () => Math.floor(state.distance) + state.smash * 20;
+const score = () => Math.floor(state.distance) + state.smashPts;
+let bestReach = Number(lsGet('catball-reach') || 1);
+const COMBO_TIME = 2.5; // この秒数以内に次を壊すとコンボがつながる
+
+// n部屋目が何周目のどの場面か（2周目からは玄関をとばす）
+function roomAt(n) {
+  const N = SCENES.length;
+  if (n <= N) return { lap: 1, id: SCENES[n - 1].id };
+  const m = n - N - 1;
+  return { lap: 2 + Math.floor(m / (N - 1)), id: SCENES[1 + m % (N - 1)].id };
+}
+const roomText = (n) => { const r = roomAt(n); return t().roomTxt(n, r.lap, sceneName(r.id)); };
+function showFarthest() { $('farthest').textContent = bestReach > 1 ? t().farthest(roomText(bestReach)) : ''; }
+
+// 壊したときの「+60」表示（壊した物の上に出す）
+const popV = new THREE.Vector3();
+function popup(text, pos) {
+  popV.copy(pos).project(camera);
+  const el = document.createElement('span');
+  el.className = 'pop'; el.textContent = text;
+  el.style.left = ((popV.x + 1) / 2 * innerWidth) + 'px';
+  el.style.top = ((1 - popV.y) / 2 * innerHeight - 20) + 'px';
+  $('pops').appendChild(el);
+  setTimeout(() => el.remove(), 950);
+}
 
 function startGame() {
   if (!ready) return;
   prepareSounds();
-  Object.assign(state, { running: true, x: 0, y: 0, z: 0, vy: 0, vx: 0, speed: 12, distance: 0, smash: 0, invincible: 0, grounded: true, onFloor: true, roll: 0, slip: 0 });
+  Object.assign(state, { running: true, x: 0, y: 0, z: 0, vy: 0, vx: 0, speed: 12, distance: 0, smash: 0, smashPts: 0, combo: 0, comboTimer: 0, maxCombo: 0, room: 1, invincible: 0, grounded: true, onFloor: true, roll: 0, slip: 0 });
   if (!worldFresh) resetWorld(); // ふつうはゲームオーバー画面のあいだに作り直し済み
   worldFresh = false;
   clock.getDelta();
@@ -237,7 +263,12 @@ function gameOver() {
   if (sc > best) { best = sc; lsSet('catball-best', best); }
   const here = sceneName(rooms.reduce((a, r) => (Math.abs(r.z - state.z) < Math.abs(a.z - state.z) ? r : a)).info.scene.id);
   $('result').innerHTML = t().result(here, t().cause[state.cause] || t().cause.bump, Math.floor(state.distance), state.smash, sc);
-  $('best').textContent = t().best(best);
+  const newReach = state.room > bestReach;
+  if (newReach) { bestReach = state.room; lsSet('catball-reach', bestReach); }
+  $('reach').innerHTML = t().reached(roomText(state.room)) + (newReach && state.room > 1 ? '　' + t().newRecord : '') + '<br>' + t().maxCombo(state.maxCombo);
+  $('best').textContent = t().best(best) + '　/　' + t().farthest(roomText(bestReach));
+  state.combo = 0; state.comboTimer = 0;
+  showFarthest();
   $('over').classList.remove('hidden');
   sfx(400, .15); sfx(300, .2, .15); sfx(200, .35, .35);
   // 次のプレイ用の家を、ゲームオーバー画面のあいだに作り直しておく（スタート時の引っかかり防止）
@@ -250,6 +281,7 @@ function gameOver() {
 }
 
 function updateHud() {
+  $('room').textContent = state.room;
   $('smash').textContent = state.smash;
   $('dist').textContent = Math.floor(state.distance);
 }
@@ -384,6 +416,7 @@ const refreshLang = () => {
   applyStatic();
   langBtn.textContent = t().langBtn;
   $('startBtn').textContent = ready ? t().start : t().loading;
+  showFarthest();
 };
 langBtn.onclick = (e) => { e.stopPropagation(); setLang(lang === 'ja' ? 'en' : 'ja'); refreshLang(); };
 const muteBtn = $('mute');
@@ -427,7 +460,16 @@ function smash(o, byCat) {
     debris.push({ obj: d, v: new THREE.Vector3(rand(-5, 5), rand(0, 8), -state.speed - rand(0, 6)), av: new THREE.Vector3(5, 5, 0), life: .6, shared: true });
   }
   noiseSfx();
-  state.smash++; state.shake = Math.max(state.shake, .15); sfx(900, .05, .05, 'square', .04);
+  // コンボ：COMBO_TIME 秒以内に続けて壊すと倍率アップ（最大×5）
+  state.combo = state.comboTimer > 0 ? state.combo + 1 : 1;
+  state.comboTimer = COMBO_TIME;
+  state.maxCombo = Math.max(state.maxCombo, state.combo);
+  const mult = Math.min(5, state.combo);
+  const pts = 20 * mult;
+  state.smash++; state.smashPts += pts;
+  state.shake = Math.max(state.shake, .15);
+  sfx(700 + mult * 140, .06, .05, 'square', .05);
+  popup('+' + pts, new THREE.Vector3(o.x, o.y0 + o.h + .5, o.z));
 }
 function updateDebris(dt) {
   for (const d of debris) {
@@ -573,6 +615,7 @@ function update(dt) {
     if (state.running && part && prevZ > part.z && state.z <= part.z) {
       part.passed = true;
       part.av = -6;
+      state.room++;
       showBanner(sceneName(part.sceneId));
       sfx(700, .05, 0, 'triangle', .08); noiseSfx(.15, 900, .15);
     }
@@ -588,6 +631,17 @@ function update(dt) {
     updateHud();
   }
   updateDebris(dt);
+  // コンボの表示と時間切れ
+  if (state.comboTimer > 0) {
+    state.comboTimer -= dt;
+    if (state.comboTimer <= 0) state.combo = 0;
+  }
+  const comboEl = $('combo');
+  if (state.running && state.combo >= 2) {
+    $('comboTxt').textContent = tr().combo(state.combo, Math.min(5, state.combo));
+    $('comboBar').style.transform = `scaleX(${Math.max(0, state.comboTimer / COMBO_TIME)})`;
+    comboEl.classList.add('show');
+  } else comboEl.classList.remove('show');
   for (const o of obstacles) {
     if (!o.marker) continue;
     const u = o.marker.userData, tt = clock.elapsedTime * 5 + u.phase;
