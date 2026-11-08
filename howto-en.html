@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neko Ball — How to Play</title>
+<style>
+  :root {
+    --bg: #f6efe3; --card: #fffaf2; --ink: #3b2a1e; --sub: #7a6553; --accent: #e0812f; --accent-dark: #b5651d;
+    --ok: #2f8a4a; --ng: #c2412d; --line: #ead9c2; --spark: #f5c542;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Hiragino Maru Gothic ProN", "Rounded Mplus 1c", "Yu Gothic", sans-serif; line-height: 1.8; }
+  header { text-align: center; padding: 40px 16px 24px; background: linear-gradient(#3b2a1e, #5a3e2b); color: #fff; }
+  header h1 { margin: 0; font-size: clamp(40px, 10vw, 72px); color: #ffcf6e; text-shadow: 0 4px 0 var(--accent-dark), 0 8px 16px rgba(0,0,0,.4); letter-spacing: .05em; }
+  header p { margin: 8px 0 20px; opacity: .9; }
+  .play { display: inline-block; font-size: 20px; font-weight: bold; padding: 12px 36px; border-radius: 999px; background: #ff9f43; color: #fff; text-decoration: none; box-shadow: 0 5px 0 var(--accent-dark); }
+  .play:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--accent-dark); }
+  nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; padding: 12px 16px; background: var(--card); border-bottom: 1px solid var(--line); font-size: 14px; position: sticky; top: 0; z-index: 2; }
+  nav a { color: var(--accent-dark); text-decoration: none; }
+  main { max-width: 860px; margin: 0 auto; padding: 8px 16px 60px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px 22px; margin: 22px 0; }
+  h2 { margin: 0 0 10px; font-size: 22px; display: flex; align-items: center; gap: 10px; }
+  h2 .num { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: 17px; }
+  h3 { margin: 18px 0 6px; font-size: 17px; }
+  p { margin: 6px 0; }
+  img.shot { width: 100%; border-radius: 10px; border: 1px solid var(--line); display: block; margin: 10px 0; }
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .box { border-radius: 12px; padding: 12px 14px; border: 2px solid var(--line); background: #fff; }
+  .box.ok { border-color: #9fd3ad; background: #f1faf3; }
+  .box.ng { border-color: #efb2a6; background: #fdf2ef; }
+  .box h3 { margin-top: 0; }
+  .ok-t { color: var(--ok); } .ng-t { color: var(--ng); }
+  ul { margin: 6px 0; padding-left: 1.3em; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+  th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: #f3e6d3; width: 30%; }
+  kbd { display: inline-block; padding: 0 7px; border: 1px solid #cdb79c; border-bottom-width: 3px; border-radius: 6px; background: #fff; font-family: inherit; font-size: 14px; }
+  .scenes { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+  .scenes figure { margin: 0; }
+  .scenes img { width: 100%; border-radius: 8px; border: 1px solid var(--line); display: block; }
+  .scenes figcaption { font-size: 14px; text-align: center; margin-top: 4px; }
+  .order { font-weight: bold; color: var(--accent-dark); }
+  .rooms { columns: 2 260px; column-gap: 24px; font-size: 14px; }
+  .rooms li { break-inside: avoid; margin-bottom: 4px; }
+  .tip { background: #fff4d6; border-left: 5px solid var(--spark); padding: 8px 12px; border-radius: 8px; margin: 10px 0; }
+  .gimmicks { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .gimmicks .box img { width: 100%; border-radius: 8px; display: block; margin-bottom: 8px; }
+  footer { text-align: center; padding: 10px 16px 40px; color: var(--sub); font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Neko Ball</h1>
+  <p>How to play</p>
+  <a class="play" href="index.html?lang=en">Play the game ▶</a>
+</header>
+<nav>
+  <a href="#goal">Goal</a><a href="#control">Controls</a><a href="#forms">Two forms</a><a href="#break">Smashable</a><a href="#out">You're out</a><a href="#ride">Climbing</a><a href="#door">Cat flaps</a><a href="#scenes">Rooms</a><a href="#gimmick">Surprises</a><a href="#score">Score</a><a href="howto.html" lang="ja">日本語</a>
+</nav>
+<main>
+
+<section id="goal">
+  <h2><span class="num">1</span>Goal</h2>
+  <p>A cat curled up into a ball rolls <b>from the front door deeper and deeper into the house</b>.</p>
+  <p>Dodge furniture and animals, <b>smash the things that sparkle ✨</b>, and see how far you can go!</p>
+  <p>The cat rolls forward on its own. The farther you go, the faster it gets — and the music speeds up too.</p>
+</section>
+
+<section id="control">
+  <h2><span class="num">2</span>Controls</h2>
+  <table>
+    <tr><th></th><th>Computer</th><th>Phone / tablet</th></tr>
+    <tr><th>Move left / right</th><td><kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd> <kbd>D</kbd><br>Drag left or right with the mouse</td><td>Drag left or right on the screen</td></tr>
+    <tr><th>Jump</th><td><kbd>Space</kbd> / <kbd>↑</kbd> / Click</td><td>Tap the screen</td></tr>
+    <tr><th>Music on / off</th><td colspan="2">The 🔊 button at the top right</td></tr>
+  </table>
+  <p>The cat goes “meow!” when it jumps.</p>
+</section>
+
+<section id="forms">
+  <h2><span class="num">3</span>The cat's two forms</h2>
+  <img class="shot" src="img/cats.jpg" alt="The cat form (left) and the curled-up ball form (right)" onerror="this.remove()">
+  <div class="cols">
+    <div class="box">
+      <h3>🟠 Ball (on the floor)</h3>
+      <p>Most of the time the cat is curled up into a ball, rolling along the floor.</p>
+      <p>Only the ball can roll through a cat flap.</p>
+    </div>
+    <div class="box">
+      <h3>🐈 Cat (jumping or on furniture)</h3>
+      <p>When it jumps, the cat stretches out and turns back into a cat.</p>
+      <p>Land on a table or a chair and it trots along the top.</p>
+    </div>
+  </div>
+</section>
+
+<section id="break">
+  <h2><span class="num">4</span>Things you can smash ✨</h2>
+  <p>Anything that <b>sparkles and has a soft glow around its base</b> can be smashed — as a ball or as a cat. <b>20 points each.</b></p>
+  <img class="shot" src="img/breakable.jpg" alt="A sparkling item you can smash" onerror="this.remove()">
+  <div class="cols">
+    <div class="box ok">
+      <h3 class="ok-t">On the floor</h3>
+      <ul><li>Potted plants and flower pots</li><li>Electric fans</li><li>Robot vacuums (they wander left and right)</li><li>Laundry (piles and baskets)</li><li>Vases on pedestals, block towers, lanterns, ball baskets</li></ul>
+    </div>
+    <div class="box ok">
+      <h3 class="ok-t">On tables and counters</h3>
+      <ul><li>Vases and bud vases</li><li>Goldfish bowls</li><li>Piggy banks</li><li>Small potted plants</li><li>Dishes, teacups, teapots, mugs, glasses, bottles, figures</li></ul>
+    </div>
+  </div>
+  <p class="tip">To smash things on a table, jump onto the table and walk into them.</p>
+</section>
+
+<section id="out">
+  <h2><span class="num">5</span>Hit these and you're out</h2>
+  <p>You only get one life. Bump into any of these and the game is over.</p>
+  <div class="cols">
+    <div class="box ng">
+      <h3 class="ng-t">Furniture and fixed objects</h3>
+      <ul>
+        <li>Tables, low tables, kotatsu, sofas, beds, pool and table-tennis tables, the piano</li>
+        <li>Chairs and stools</li>
+        <li>Cardboard boxes, umbrella stands, vacuum cleaners, trolleys, trunks, crates</li>
+        <li>Lamps, braziers, folding screens, globes, music stands, speakers</li>
+      </ul>
+    </div>
+    <div class="box ng">
+      <h3 class="ng-t">Animals, moving things and walls</h3>
+      <ul>
+        <li>The vacuum cleaner charging down the hallway</li>
+        <li>The big cat in the Japanese living room</li>
+        <li>The big dog in the drawing room</li>
+        <li>The wall around each cat flap</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="ride">
+  <h2><span class="num">6</span>Climbing onto furniture</h2>
+  <p>Tables, sofas, beds, chairs and similar furniture <b>can be jumped onto</b>. Hitting them from the side is out, but landing on top is fine.</p>
+  <p>If your jump is a little short, the cat will pull itself up as long as it reaches the edge.</p>
+  <h3>Blocking furniture</h3>
+  <p>Some furniture spans the whole room, so you can't go around it. <b>Jump over it.</b></p>
+  <ul><li>The step up from the entrance hall</li><li>A bed placed sideways</li><li>Kitchen and bar counters</li><li>A low bookshelf, a sideways table-tennis table, a brick planter, a wall of crates</li></ul>
+</section>
+
+<section id="door">
+  <h2><span class="num">7</span>Cat flaps lead to the next room</h2>
+  <img class="shot" src="img/door.jpg" alt="The cat flap between two rooms" onerror="this.remove()">
+  <p>Between rooms there's a wall, with a <b>cat flap</b> at the bottom of a door, a sliding screen, or a secret bookshelf.</p>
+  <ul>
+    <li>Steer left or right yourself to line up with the flap.</li>
+    <li>Roll through <b>as a ball, on the floor</b>. If you're still in the air, you'll bonk the wall above it!</li>
+    <li>Miss the flap and you hit the wall — you're out.</li>
+  </ul>
+  <p class="tip">There's nothing in your way just before a cat flap or just after it. Take your time to line up.</p>
+</section>
+
+<section id="scenes">
+  <h2><span class="num">8</span>Room order</h2>
+  <p class="order">Entrance Hall → Hallway → Living Room (Japanese) → Veranda → Tatami Room → Bedroom → Kids’ Room → Study → Secret Hobby Room → Kitchen → Home Bar → Karaoke Room → Billiard Room → Table Tennis Room → Brick Fireplace Room → Drawing Room → Music Room → Indoor Garden → Attic</p>
+  <p>After the attic you start again from the hallway. There are 19 rooms in all.</p>
+  <ul class="rooms">
+    <li><b>Veranda</b>: glass doors onto the garden. Smash the bonsai and mosquito coils. Watch out for the shogi board.</li>
+    <li><b>Kids’ Room</b>: colorful floor and bunk beds. Smash the block towers. Watch out for the rocking horse and toy box.</li>
+    <li><b>Study</b>: bookshelves everywhere. A low bookshelf blocks the way. Watch out for piles of books.</li>
+    <li><b>Secret Hobby Room</b>: entered through a hidden bookshelf door in the study. Smash the figures. Climb onto the model railway.</li>
+    <li><b>Home Bar</b>: the bar counter blocks the way. Smash the glasses and bottles. Watch out for bar stools.</li>
+    <li><b>Karaoke Room</b>: a mirror ball and a big screen. Smash the tambourines and maracas. Watch out for mic stands and speakers.</li>
+    <li><b>Billiard Room</b>: climb onto the pool table and smash the balls on it. Watch out for the cue stands.</li>
+    <li><b>Table Tennis Room</b>: climb onto the table (a sideways one blocks the way). Smash the ball baskets.</li>
+    <li><b>Brick Fireplace Room</b>: brick walls and a roaring fireplace. Smash lanterns and figurines. Watch out for log piles and rocking chairs.</li>
+    <li><b>Music Room</b>: climb onto the grand piano. Smash the metronomes. Watch out for music stands and cello cases.</li>
+    <li><b>Indoor Garden</b>: a glass sunroom. Smash flower pots and watering cans. A brick planter blocks the way.</li>
+    <li><b>Attic</b>: a sloping roof and beams. Smash the lanterns. Watch out for old trunks, crates and the rocking horse.</li>
+  </ul>
+  <div class="scenes">
+    <figure><img src="img/scene_genkan.jpg" alt="Entrance Hall" onerror="this.parentNode.remove()"><figcaption>Entrance Hall</figcaption></figure>
+    <figure><img src="img/scene_rouka.jpg" alt="Hallway" onerror="this.parentNode.remove()"><figcaption>Hallway</figcaption></figure>
+    <figure><img src="img/scene_chanoma.jpg" alt="Living Room (Japanese)" onerror="this.parentNode.remove()"><figcaption>Living Room (Japanese)</figcaption></figure>
+    <figure><img src="img/scene_washitsu.jpg" alt="Tatami Room" onerror="this.parentNode.remove()"><figcaption>Tatami Room</figcaption></figure>
+    <figure><img src="img/scene_yoshitsu.jpg" alt="Bedroom" onerror="this.parentNode.remove()"><figcaption>Bedroom</figcaption></figure>
+    <figure><img src="img/scene_kitchen.jpg" alt="Kitchen" onerror="this.parentNode.remove()"><figcaption>Kitchen</figcaption></figure>
+    <figure><img src="img/scene_oosetsu.jpg" alt="Drawing Room" onerror="this.parentNode.remove()"><figcaption>Drawing Room</figcaption></figure>
+  </div>
+</section>
+
+<section id="gimmick">
+  <h2><span class="num">9</span>Room surprises</h2>
+  <div class="gimmicks">
+    <div class="box">
+      <img src="img/gm_vacuum.jpg" alt="A vacuum cleaner charging toward you" onerror="this.remove()">
+      <h3>Hallway: the charging vacuum</h3>
+      <p>It heads straight for you and follows you left and right. Dodge it or jump over it.</p>
+    </div>
+    <div class="box">
+      <img src="img/gm_cat.jpg" alt="A big tabby cat asleep on a cushion" onerror="this.remove()">
+      <h3>Japanese living room: the sleeping big cat</h3>
+      <p>Roll past it as a ball and it wakes up with a hiss, fur standing on end, and gets bigger. Jump over it quietly and it stays asleep.</p>
+    </div>
+    <div class="box">
+      <img src="img/gm_puddle.jpg" alt="A wet floor" onerror="this.remove()">
+      <h3>Kitchen: the wet floor</h3>
+      <p>Roll through spilled water and you slide sideways, out of control for a moment. Watch out for what's waiting on the other side!</p>
+    </div>
+    <div class="box">
+      <img src="img/gm_dog.jpg" alt="A big dog asleep on the rug" onerror="this.remove()">
+      <h3>Drawing room: the sleeping big dog</h3>
+      <p>It sleeps along one side of the room. Bump into it and you're out. Jump over it and it barks “Woof!”</p>
+    </div>
+  </div>
+</section>
+
+<section id="score">
+  <h2><span class="num">10</span>Score</h2>
+  <p><b>Score = distance traveled (m) + things smashed × 20</b></p>
+  <p>Your best score is saved in your browser. The game-over screen shows where you were and what you hit.</p>
+  <p>The music is Offenbach’s “Galop Infernal” (the can-can) — the classic tune for races at Japanese school sports days.</p>
+</section>
+
+<p style="text-align:center"><a class="play" href="index.html?lang=en">Play the game ▶</a></p>
+</main>
+<footer>Neko Ball</footer>
+</body>
+</html>

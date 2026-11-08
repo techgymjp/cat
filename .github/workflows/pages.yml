@@ -25,7 +25,7 @@ jobs:
       - name: サイト用ファイルを集める
         run: |
           mkdir _site
-          cp -r index.html howto.html js img _site/
+          cp -r index.html howto.html howto-en.html js img _site/
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

@@ -17,6 +17,7 @@
   .hidden { display: none !important; }
   .keys { opacity: .85; font-size: 15px !important; }
   #mute { pointer-events: auto; background: rgba(0,0,0,.25); border: none; border-radius: 999px; font-size: 22px; width: 44px; height: 44px; cursor: pointer; }
+  #langBtn { position: absolute; top: max(14px, env(safe-area-inset-top, 0px)); right: 16px; margin: 0 !important; font-size: 15px !important; padding: 6px 16px !important; background: rgba(255,255,255,.18) !important; box-shadow: none !important; border: 1px solid rgba(255,255,255,.5) !important; }
   .spark { color: #ffe27a; font-weight: bold; }
   .howto { margin-top: 14px; color: #ffe2b8; font-size: 16px; text-decoration: underline; }
   #banner { position: fixed; top: 22%; left: 0; right: 0; text-align: center; color: #fff; font-size: clamp(28px, 7vw, 52px); font-weight: bold; letter-spacing: .1em; text-shadow: 0 3px 0 rgba(90,50,20,.8), 0 6px 18px rgba(0,0,0,.5); opacity: 0; transform: translateY(10px); transition: opacity .4s, transform .4s; pointer-events: none; }
@@ -32,26 +33,27 @@
 <body>
 <div id="hud">
   <div>💥 <span id="smash">0</span>　📏 <span id="dist">0</span>m</div>
-  <button id="mute" aria-label="BGMのオン・オフ">🔊</button>
+  <button id="mute" aria-label="BGMのオン・オフ" data-i18n-aria="mute">🔊</button>
 </div>
 
 <div id="banner"></div>
 
 <div id="title" class="screen">
-  <h1>猫ボール</h1>
-  <p>まるくなったネコが、玄関から家の奥へどこまでもころがっていく！</p>
-  <p><span class="spark">✨キラキラ✨</span>している物はぶっ壊してOK！（1こ20点）<br>それ以外の家具・動物・壁にぶつかったら一発アウト！<br>タップでジャンプ。テーブルやイスの上は歩けるよ。<br>部屋のさかいめは猫用扉にねらいを定めて、ボールのままくぐろう！</p>
-  <p class="keys">PC：← → / A D で左右　クリック / スペースでジャンプ<br>スマホ：左右にドラッグで移動　タップでジャンプ</p>
+  <button id="langBtn" type="button">English</button>
+  <h1 data-i18n="title">猫ボール</h1>
+  <p data-i18n="intro">まるくなったネコが、玄関から家の奥へどこまでもころがっていく！</p>
+  <p data-i18n-html="rules"><span class="spark">✨キラキラ✨</span>している物はぶっ壊してOK！（1こ20点）<br>それ以外の家具・動物・壁にぶつかったら一発アウト！<br>タップでジャンプ。テーブルやイスの上は歩けるよ。<br>部屋のさかいめは猫用扉にねらいを定めて、ボールのままくぐろう！</p>
+  <p class="keys" data-i18n-html="keys">PC：← → / A D で左右　クリック / スペースでジャンプ<br>スマホ：左右にドラッグで移動　タップでジャンプ</p>
   <button id="startBtn" disabled>じゅんび中…</button>
-  <a class="howto" href="howto.html">遊び方をくわしく見る</a>
+  <a class="howto" href="howto.html" data-i18n="howtoMore" data-i18n-href="howtoUrl">遊び方をくわしく見る</a>
 </div>
 
 <div id="over" class="screen hidden">
-  <h1>ニャーン…</h1>
+  <h1 data-i18n="overTitle">ニャーン…</h1>
   <p id="result"></p>
   <p id="best"></p>
-  <button id="retryBtn">もう一回</button>
-  <a class="howto" href="howto.html">遊び方</a>
+  <button id="retryBtn" data-i18n="retry">もう一回</button>
+  <a class="howto" href="howto.html" data-i18n="howto" data-i18n-href="howtoUrl">遊び方</a>
 </div>
 
 <script type="module" src="js/game.js"></script>

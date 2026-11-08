@@ -3,6 +3,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { SEG_LEN, SEG_COUNT, HALF_W, PLAY_X, LANES, FLAP_W, pick, rand, disposeTree } from './util.js';
 import { SCENES, sceneAt, buildRoom } from './scenes.js';
 import { createCat, BALL_R } from './cat.js';
+import { t, sceneName, lang, setLang, applyStatic } from './i18n.js';
 import { startBgm, stopBgm, setBgmTempo, toggleMute, isMuted, prepareBgm } from './bgm.js';
 
 const GRAVITY = 30;
@@ -180,7 +181,7 @@ function placeRoom(room, z) {
   room.z = z;
   room.info = info;
   room.partition = built.partition;
-  if (room.partition) Object.assign(room.partition, { z: z + SEG_LEN / 2, angle: 0, av: 0, passed: false, name: info.scene.name });
+  if (room.partition) Object.assign(room.partition, { z: z + SEG_LEN / 2, angle: 0, av: 0, passed: false, sceneId: info.scene.id });
   scene.add(room.group);
   spawnContent(info, z, state.distance / 150, room.group);
   roomIndex++;
@@ -225,7 +226,7 @@ function startGame() {
   $('title').classList.add('hidden');
   $('over').classList.add('hidden');
   updateHud();
-  showBanner('玄関');
+  showBanner(sceneName('genkan'));
   try { startBgm(audio()); } catch {}
   sfx(660, .08); sfx(880, .1, .08);
 }
@@ -234,9 +235,9 @@ function gameOver() {
   state.crashed = false;
   const sc = score();
   if (sc > best) { best = sc; lsSet('catball-best', best); }
-  const here = rooms.reduce((a, r) => (Math.abs(r.z - state.z) < Math.abs(a.z - state.z) ? r : a)).info.scene.name;
-  $('result').innerHTML = `${here}で${state.cause}<br>きょり ${Math.floor(state.distance)}m ／ こわした物 ${state.smash}こ<br>スコア ${sc}`;
-  $('best').textContent = `ベスト ${best}`;
+  const here = sceneName(rooms.reduce((a, r) => (Math.abs(r.z - state.z) < Math.abs(a.z - state.z) ? r : a)).info.scene.id);
+  $('result').innerHTML = t().result(here, t().cause[state.cause] || t().cause.bump, Math.floor(state.distance), state.smash, sc);
+  $('best').textContent = t().best(best);
   $('over').classList.remove('hidden');
   sfx(400, .15); sfx(300, .2, .15); sfx(200, .35, .35);
   // 次のプレイ用の家を、ゲームオーバー画面のあいだに作り直しておく（スタート時の引っかかり防止）
@@ -256,7 +257,7 @@ function updateHud() {
 let bannerTimer = 0;
 function showBanner(text) {
   const b = $('banner');
-  b.textContent = `〜 ${text} 〜`;
+  b.textContent = t().banner(text);
   b.classList.add('show');
   clearTimeout(bannerTimer);
   bannerTimer = setTimeout(() => b.classList.remove('show'), 1800);
@@ -349,7 +350,8 @@ const sfxSet = {
   splash() { noiseSfx(.3, 3000, .25); sfx(900, .08, 0, 'sine', .08); sfx(600, .1, .06, 'sine', .06); },
 };
 const tickCtx = { state, sfx: sfxSet };
-const HAZARD_MSG = { vacuum: '掃除機に吸いこまれた！', cat: '先輩ネコに「シャーッ」とされた！', dog: '犬にぶつかって起こしてしまった！' };
+// ゲームオーバーの原因（文言は i18n.js）
+const HAZARD_MSG = { vacuum: 'vacuum', cat: 'cat', dog: 'dog' };
 
 // ---------- 入力 ----------
 addEventListener('keydown', (e) => {
@@ -376,6 +378,14 @@ renderer.domElement.addEventListener('pointerup', () => {
 });
 renderer.domElement.addEventListener('pointercancel', () => { ptr = null; input.dragX = null; });
 $('startBtn').onclick = startGame;
+// 言語の切り替え
+const langBtn = $('langBtn');
+const refreshLang = () => {
+  applyStatic();
+  langBtn.textContent = t().langBtn;
+  $('startBtn').textContent = ready ? t().start : t().loading;
+};
+langBtn.onclick = (e) => { e.stopPropagation(); setLang(lang === 'ja' ? 'en' : 'ja'); refreshLang(); };
 const muteBtn = $('mute');
 const showMute = () => { muteBtn.textContent = isMuted() ? '🔇' : '🔊'; };
 showMute();
@@ -435,7 +445,7 @@ function updateDebris(dt) {
 // ライフは1つ：ぶつかったら一発アウト
 function hurt(cause) {
   if (!state.running || window.__catball?.god) return; // god はテスト用
-  state.cause = cause || 'ゴツン！';
+  state.cause = cause || 'bump';
   state.running = false;
   state.crashed = true;
   stopBgm();
@@ -557,13 +567,13 @@ function update(dt) {
       if (!inX || !inY) {
         state.z = part.z + BALL_R * .7;
         cat.position.z = state.z;
-        hurt(inX ? '猫用扉の上の壁にゴツン！' : '壁にゴツン！猫用扉をくぐれなかった');
+        hurt(inX ? 'doorTop' : 'doorMiss');
       }
     }
     if (state.running && part && prevZ > part.z && state.z <= part.z) {
       part.passed = true;
       part.av = -6;
-      showBanner(part.name);
+      showBanner(sceneName(part.sceneId));
       sfx(700, .05, 0, 'triangle', .08); noiseSfx(.15, 900, .15);
     }
 
@@ -661,7 +671,7 @@ addEventListener('resize', () => {
 let ready = false;
 async function warmUp() {
   const btn = $('startBtn');
-  btn.disabled = true; btn.textContent = 'じゅんび中…';
+  btn.disabled = true; btn.textContent = t().loading;
   const bgmReady = prepareBgm(); // BGM の音声データ作りを並行して進める
   buildSoundData();              // 効果音の音声データも先に作る
   await new Promise(r => setTimeout(r, 50));
@@ -693,9 +703,10 @@ async function warmUp() {
   removeMarker(mk);
   await bgmReady;
   ready = true;
-  btn.disabled = false; btn.textContent = 'スタート';
+  btn.disabled = false; btn.textContent = t().start;
 }
 
+refreshLang();
 resetWorld();
 worldFresh = true;
 camera.position.set(0, 2.8, 5.5);
