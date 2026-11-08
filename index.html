@@ -8,7 +8,6 @@
   html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1410; font-family: "Hiragino Maru Gothic ProN", "Rounded Mplus 1c", "Yu Gothic", sans-serif; }
   canvas { display: block; touch-action: none; }
   #hud { position: fixed; top: 12px; left: 16px; right: 16px; display: flex; justify-content: space-between; color: #fff; font-size: 20px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,.6); pointer-events: none; }
-  #hud .lives { letter-spacing: 4px; }
   .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; text-align: center; background: rgba(30, 18, 10, .55); padding: 16px; box-sizing: border-box; }
   .screen h1 { font-size: clamp(44px, 12vw, 88px); margin: 0 0 8px; color: #ffcf6e; text-shadow: 0 4px 0 #b5651d, 0 8px 16px rgba(0,0,0,.5); }
   .screen p { margin: 6px 0; font-size: 18px; line-height: 1.6; }
@@ -29,7 +28,6 @@
 <body>
 <div id="hud">
   <div>💥 <span id="smash">0</span>　📏 <span id="dist">0</span>m</div>
-  <div class="lives" id="lives">❤️❤️❤️</div>
 </div>
 
 <div id="banner"></div>
@@ -37,7 +35,7 @@
 <div id="title" class="screen">
   <h1>猫ボール</h1>
   <p>まるくなったネコが、玄関から家の奥へどこまでもころがっていく！</p>
-  <p>ボールのままぶつかるとイタイ！<br>タップでジャンプしてネコにもどれば、花びんや段ボールなどの小物をぶっ壊せる。<br>テーブルやイス、カウンターの上は歩けるよ（据え置き家具はこわせない）。<br>部屋のさかいめは猫用扉をくぐって次の部屋へ。</p>
+  <p>ボールのまま何かにぶつかったら一発アウト！<br>タップでジャンプしてネコにもどれば、花びんや段ボールなどの小物をぶっ壊せる。<br>テーブルやイス、カウンターの上は歩けるよ（据え置き家具はこわせない）。<br>部屋のさかいめは猫用扉をくぐって次の部屋へ。</p>
   <p class="keys">PC：← → / A D で左右　クリック / スペースでジャンプ<br>スマホ：左右にドラッグで移動　タップでジャンプ</p>
   <button id="startBtn">スタート</button>
 </div>

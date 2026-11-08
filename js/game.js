@@ -142,7 +142,7 @@ function nextPartition() {
 // ---------- 状態 ----------
 const state = {
   running: false, x: 0, y: 0, z: 0, vy: 0, vx: 0, speed: 12, distance: 0, smash: 0,
-  lives: 3, invincible: 0, grounded: true, onFloor: true, roll: 0, shake: 0,
+  invincible: 0, grounded: true, onFloor: true, roll: 0, shake: 0,
 };
 const input = { left: false, right: false, jumpQueued: false, dragX: null };
 const $ = (id) => document.getElementById(id);
@@ -152,7 +152,7 @@ let best = Number(lsGet('catball-best') || 0);
 const score = () => Math.floor(state.distance) + state.smash * 20;
 
 function startGame() {
-  Object.assign(state, { running: true, x: 0, y: 0, z: 0, vy: 0, vx: 0, speed: 12, distance: 0, smash: 0, lives: 3, invincible: 0, grounded: true, onFloor: true, roll: 0 });
+  Object.assign(state, { running: true, x: 0, y: 0, z: 0, vy: 0, vx: 0, speed: 12, distance: 0, smash: 0, invincible: 0, grounded: true, onFloor: true, roll: 0 });
   resetWorld();
   $('title').classList.add('hidden');
   $('over').classList.add('hidden');
@@ -162,11 +162,11 @@ function startGame() {
 }
 
 function gameOver() {
-  state.running = false;
+  state.crashed = false;
   const sc = score();
   if (sc > best) { best = sc; lsSet('catball-best', best); }
   const here = rooms.reduce((a, r) => (Math.abs(r.z - state.z) < Math.abs(a.z - state.z) ? r : a)).info.scene.name;
-  $('result').innerHTML = `${here}で力つきた…<br>きょり ${Math.floor(state.distance)}m ／ こわした家具 ${state.smash}こ<br>スコア ${sc}`;
+  $('result').innerHTML = `${here}でゴツン！<br>きょり ${Math.floor(state.distance)}m ／ こわした物 ${state.smash}こ<br>スコア ${sc}`;
   $('best').textContent = `ベスト ${best}`;
   $('over').classList.remove('hidden');
   sfx(400, .15); sfx(300, .2, .15); sfx(200, .35, .35);
@@ -175,7 +175,6 @@ function gameOver() {
 function updateHud() {
   $('smash').textContent = state.smash;
   $('dist').textContent = Math.floor(state.distance);
-  $('lives').textContent = '❤️'.repeat(Math.max(0, state.lives)) + '🤍'.repeat(Math.max(0, 3 - state.lives));
 }
 
 let bannerTimer = 0;
@@ -245,7 +244,7 @@ addEventListener('keydown', (e) => {
   if (['ArrowLeft', 'a', 'A'].includes(e.key)) input.left = true;
   if (['ArrowRight', 'd', 'D'].includes(e.key)) input.right = true;
   if ([' ', 'ArrowUp', 'w', 'W'].includes(e.key)) { input.jumpQueued = true; e.preventDefault(); }
-  if (e.key === 'Enter' && !state.running) startGame();
+  if (e.key === 'Enter' && !state.running && !state.crashed) startGame();
 });
 addEventListener('keyup', (e) => {
   if (['ArrowLeft', 'a', 'A'].includes(e.key)) input.left = false;
@@ -316,14 +315,16 @@ function updateDebris(dt) {
   debris = debris.filter(d => d.life > 0);
 }
 
+// ライフは1つ：ぶつかったら一発アウト
 function hurt() {
-  state.lives--;
-  state.invincible = 1.6;
-  state.shake = 0.4;
-  state.speed *= 0.5;
-  sfx(150, .25, 0, 'sawtooth', .12);
+  if (!state.running) return;
+  state.running = false;
+  state.crashed = true;
+  state.shake = 0.5;
+  sfx(150, .3, 0, 'sawtooth', .14);
+  noiseSfx(.25, 600, .3);
   updateHud();
-  if (state.lives <= 0) gameOver();
+  setTimeout(gameOver, 900);
 }
 
 // ---------- メインループ ----------
@@ -386,16 +387,16 @@ function update(dt) {
           // 通せんぼ家具：ぶつかってから跳ね上がって乗る
           state.z = o.z + o.d / 2 + BALL_R * .8;
           state.vy = JUMP_V; state.grounded = false; state.onFloor = false;
-          if (state.invincible === 0) hurt();
+          hurt();
         } else {
           const side = Math.sign(state.x - o.x) || 1;
           let nx = o.x + side * (o.w / 2 + BALL_R + 0.05);
           if (Math.abs(nx) > lim) nx = o.x - side * (o.w / 2 + BALL_R + 0.05);
           state.x = nx; state.vx = side * 4;
-          if (state.invincible === 0) hurt();
+          hurt();
         }
       } else if (state.onFloor) {
-        if (state.invincible === 0 && hitsBox(o, BALL_R * 0.85)) { smash(o, false); hurt(); }
+        if (hitsBox(o, BALL_R * 0.85)) { smash(o, false); hurt(); }
       } else if (hitsBox(o, BALL_R * 1.25)) {
         smash(o, true);
       }
