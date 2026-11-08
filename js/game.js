@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { SEG_LEN, SEG_COUNT, PLAY_X, LANES, pick, rand, disposeTree } from './util.js';
+import { SEG_LEN, SEG_COUNT, PLAY_X, LANES, FLAP_W, pick, rand, disposeTree } from './util.js';
 import { sceneAt, buildRoom } from './scenes.js';
 import { createCat, BALL_R } from './cat.js';
 
@@ -35,7 +35,7 @@ Object.assign(sun.shadow.camera, { left: -10, right: 10, top: 14, bottom: -14, n
 scene.add(sun, sun.target);
 
 // ---------- ネコ ----------
-const { cat, ballForm, ballSpin, catForm, legs } = createCat();
+const { cat, ballForm, ballSpin, catForm, legs, tail } = createCat();
 scene.add(cat);
 const blob = new THREE.Mesh(new THREE.CircleGeometry(BALL_R * 0.9, 24), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .25, depthWrite: false }));
 blob.rotation.x = -Math.PI / 2;
@@ -380,24 +380,21 @@ function update(dt) {
     state.z -= state.speed * dt;
     state.distance += state.speed * dt;
 
-    // 左右移動（猫用扉の手前では自動で扉に向かう）
+    // 左右移動（すべてプレイヤーが操作）
     let targetVx = ((input.right ? 1 : 0) - (input.left ? 1 : 0)) * 9;
     if (input.dragX !== null) targetVx = THREE.MathUtils.clamp((input.dragX - state.x) * 8, -12, 12);
     if (state.slip > 0) { state.slip -= dt; targetVx = state.vx; } // 濡れた床でつるーっ
-    const guide = toDoor > 0 && toDoor < 12;
-    if (guide) targetVx = THREE.MathUtils.clamp((part.fx - state.x) * 6, -14, 14);
-    state.vx += (targetVx - state.vx) * Math.min(1, dt * (guide ? 14 : 10));
+    state.vx += (targetVx - state.vx) * Math.min(1, dt * 10);
     state.x += state.vx * dt;
     const lim = PLAY_X - BALL_R;
     if (Math.abs(state.x) > lim) { state.x = Math.sign(state.x) * lim; state.vx *= -0.3; }
 
     // ジャンプ
-    if (input.jumpQueued && state.grounded && !(toDoor > 0 && toDoor < 7)) {
+    if (input.jumpQueued && state.grounded) {
       state.vy = JUMP_V; state.grounded = false; state.onFloor = false;
       meow();
     }
     input.jumpQueued = false;
-    if (toDoor > 0 && toDoor < 6 && state.y > 0) state.vy = Math.min(state.vy, -9); // 扉の前では床に降りる
 
     const prevY = state.y;
     state.vy -= GRAVITY * dt;
@@ -470,7 +467,18 @@ function update(dt) {
     }
 
     // 猫用扉を通過
-    if (part && prevZ > part.z && state.z <= part.z) {
+    if (part && prevZ + BALL_R > part.z && state.z - BALL_R * .6 <= part.z && !part.checked) {
+      // ボールの姿で、フラップの幅におさまっていないと壁にぶつかる
+      part.checked = true;
+      const inX = Math.abs(state.x - part.fx) < FLAP_W / 2 - BALL_R * .55;
+      const inY = state.onFloor || state.y < .25;
+      if (!inX || !inY) {
+        state.z = part.z + BALL_R * .7;
+        cat.position.z = state.z;
+        hurt(inX ? '猫用扉の上の壁にゴツン！' : '壁にゴツン！猫用扉をくぐれなかった');
+      }
+    }
+    if (state.running && part && prevZ > part.z && state.z <= part.z) {
       part.passed = true;
       part.av = -6;
       showBanner(part.name);
@@ -523,6 +531,8 @@ function update(dt) {
     if (airborne) { l.rotation.x = front ? -1.3 : 1.3; l.rotation.z = left ? -0.8 : 0.8; }  // 大の字
     else { l.rotation.x = Math.sin(t * 22 + (front ? 0 : Math.PI) + (left ? 0 : Math.PI / 2)) * 0.8; l.rotation.z = 0; } // とことこ
   });
+  tail.rotation.y = Math.sin(t * 3) * .35;          // しっぽをゆらす
+  tail.rotation.x = airborne ? .6 : Math.sin(t * 2) * .1;
   cat.visible = state.invincible === 0 || Math.floor(t * 15) % 2 === 0;
 
   // 影：真下の足場の高さに置く
