@@ -22,11 +22,11 @@ export const SCENES = [
     floor: (i) => i === 0 ? once('stone', () => T.makeMat(T.stoneTile(), { roughness: .7 }))() : woodLight(),
     wall: once('genkanWall', () => T.makeMat(T.plaster('#f1eee6'))), ceil: ceilWhite, base: M.woodLight,
     light: 'flush',
-    wallItems: [F.getabako, F.mirror, F.coatRack, F.frostedWindow, () => F.wallPicture()],
-    obstacles: [F.shoes, F.shoes, F.boots, F.umbrellaStand, F.cardboard, F.paperBag, F.plant],
-    platforms: [F.genkanBench], platformRate: .25,
+    wallItems: [F.getabako, F.mirror, F.coatRack, F.frostedWindow, F.asWall(F.genkanBench)],
+    obstacles: [F.plant, F.plant, F.umbrellaStand, F.cardboard],
+    platforms: [], platformRate: 0,
     barriers: [F.agariKamachi], barrierRate: 0,
-    smalls: [F.vase, F.goldfishBowl, F.piggyBank, F.smallPlant, F.photoFrame],
+    smalls: [F.vase, F.goldfishBowl, F.piggyBank, F.smallPlant],
   },
   {
     id: 'rouka', name: '廊下', segs: 2,
@@ -34,28 +34,28 @@ export const SCENES = [
     wall: once('roukaWall', () => T.makeMat(T.clothWall('#ece3d0'))), ceil: ceilWhite, base: M.wood,
     wainscot: M.wood,
     light: 'flush',
-    wallItems: [F.wallDoor, F.wallDoor, () => F.wallPicture(), () => F.wallWindow()],
+    wallItems: [F.wallDoor, F.wallDoor, F.asWall(F.chest), F.asWall(F.chest), () => F.wallPicture(), () => F.wallWindow()],
     obstacles: [F.roomba, F.plant, F.laundryPile, F.laundryBasket, F.cardboard, F.vacuum],
-    platforms: [F.chest], platformRate: .3,
+    platforms: [], platformRate: 0,
     gimmicks: [G.vacuumChaser], gimmickRate: .6,
-    smalls: [F.vase, F.goldfishBowl, F.piggyBank, F.smallPlant, F.phone, F.photoFrame],
+    smalls: [F.vase, F.goldfishBowl, F.piggyBank, F.smallPlant],
   },
   {
     id: 'chanoma', name: '茶の間', segs: 3, japanese: true,
     floor: tatamiMat, wall: jurakuMat, ceil: ceilWood, base: M.woodLight,
     light: 'washiPendant',
-    wallItems: [F.shoji, F.chadansu, F.tvBoard, F.wallClock, F.fusuma],
-    obstacles: [F.fan, F.fan, F.laundryPile, F.plant, F.mikanBox, F.zabutonStack, F.zaisu],
+    wallItems: [F.shoji, F.chadansu, F.tvBoard, F.tansu, F.wallClock, F.fusuma],
+    obstacles: [F.fan, F.fan, F.laundryPile, F.plant, F.mikanBox, F.zaisu],
     platforms: [F.chabudai, F.kotatsu], platformRate: .45,
     gimmicks: [G.sleepingCat], gimmickRate: .6,
-    smalls: [F.dishes, F.yunomi, F.kyusu, F.goldfishBowl, F.mikanBasket, F.vase],
+    smalls: [F.dishes, F.yunomi, F.kyusu, F.goldfishBowl, F.vase],
   },
   {
     id: 'washitsu', name: '和室', segs: 3, japanese: true,
     floor: tatamiMat, wall: jurakuMat, ceil: ceilWood, base: M.woodLight,
     light: 'washiSquare',
-    wallItems: [F.tokonoma, F.fusuma, F.shoji, F.fusuma],
-    obstacles: [F.zabutonStack, F.zaisu, F.andon, F.hibachi, F.byobu],
+    wallItems: [F.tokonoma, F.fusuma, F.shoji, F.tansu],
+    obstacles: [F.plant, F.plant, F.zaisu, F.andon, F.hibachi, F.byobu],
     platforms: [F.zataku], platformRate: .4,
     smalls: [F.dishes, F.yunomi, F.kyusu, F.ichirin, F.vase],
   },
@@ -64,23 +64,23 @@ export const SCENES = [
     floor: once('carpet', () => T.makeMat(T.carpet('#c9bda5'), { roughness: 1 })),
     wall: once('yoshitsuWall', () => T.makeMat(T.clothWall('#e7e6e1'))), ceil: ceilWhite, base: M.white,
     light: 'pendant',
-    wallItems: [() => F.wallWindow(0, true), () => F.bookshelf(), F.closet, F.poster],
-    obstacles: [F.roomba, F.laundryPile, F.plant, F.fan, () => F.floorLamp(), F.officeChair, F.plushie],
-    platforms: [F.bed, F.desk], platformRate: .45,
+    wallItems: [() => F.wallWindow(0, true), () => F.bookshelf(), F.closet, F.asWall(F.desk)],
+    obstacles: [F.roomba, F.laundryPile, F.plant, F.fan, () => F.floorLamp(), F.officeChair],
+    platforms: [F.bed], platformRate: .4,
     barriers: [F.bedAcross], barrierRate: .5,
-    smalls: [F.piggyBank, F.goldfishBowl, F.smallPlant, F.vase, F.deskLamp, F.mug],
+    smalls: [F.piggyBank, F.goldfishBowl, F.smallPlant, F.vase, F.mug],
   },
   {
     id: 'kitchen', name: 'キッチン', segs: 3,
     floor: once('cushion', () => T.makeMat(T.cushionFloor(), { roughness: .5 })),
     wall: once('kitchenWall', () => T.makeMat(T.clothWall('#f4f2ed'))), ceil: ceilWhite, base: M.white,
     light: 'panel',
-    wallItems: [F.kitchenUnit, F.fridge, F.shokkidana, () => F.wallWindow()],
-    obstacles: [F.roomba, () => F.diningChair(), F.plant, F.kitchenWagon, F.cardboard, F.pedalBin],
+    wallItems: [F.kitchenUnit, F.fridge, F.shokkidana, F.asWall(F.pedalBin), () => F.wallWindow()],
+    obstacles: [F.roomba, F.plant, () => F.diningChair(), F.kitchenWagon],
     platforms: [F.diningTable, F.island], platformRate: .45,
     barriers: [F.kitchenCounter], barrierRate: .8,
     gimmicks: [G.puddle], gimmickRate: .8,
-    smalls: [F.dishes, F.dishes, F.pot, F.fruitBowl, F.mug, F.smallPlant],
+    smalls: [F.dishes, F.dishes, F.fruitBowl, F.mug, F.smallPlant, F.vase],
   },
   {
     id: 'oosetsu', name: '洋風応接室', segs: 3,
@@ -89,11 +89,11 @@ export const SCENES = [
     wall: once('damask', () => T.makeMat(T.damask(), { roughness: .9 })), ceil: ceilWhite, base: M.woodDark,
     wainscot: M.woodDark, cornice: true,
     light: 'chandelier',
-    wallItems: [F.fireplace, () => F.bookshelf(true), () => F.wallPicture(0, true), F.glassCabinet, () => F.wallWindow(0, true)],
-    obstacles: [F.pedestalVase, F.plant, F.globe, F.roomba, F.armchair, F.grandfatherClock, () => F.floorLamp(true)],
-    platforms: [F.coffeeTable, F.sofa, F.sideboard], platformRate: .45,
+    wallItems: [F.fireplace, () => F.bookshelf(true), F.asWall(F.sideboard), F.asWall(F.grandfatherClock, true), F.glassCabinet, () => F.wallWindow(0, true)],
+    obstacles: [F.pedestalVase, F.plant, F.roomba, F.globe, F.armchair],
+    platforms: [F.coffeeTable, F.sofa], platformRate: .45,
     gimmicks: [G.sleepingDog], gimmickRate: .6,
-    smalls: [F.teaSet, F.vase, F.goldfishBowl, F.piggyBank, F.candlestick, F.dishes],
+    smalls: [F.teaSet, F.vase, F.goldfishBowl, F.piggyBank, F.dishes],
   },
 ];
 
@@ -185,6 +185,7 @@ function buildPartition(prevScene, nextScene, fx) {
 export function buildRoom(info, fx) {
   const { scene, segIdx, isStart, prevScene } = info;
   const g = new THREE.Group();
+  g.userData.wallItems = [];
 
   const floor = plane(HALF_W * 2, SEG_LEN, scene.floor(segIdx));
   floor.rotation.x = -Math.PI / 2; g.add(floor);
@@ -213,6 +214,7 @@ export function buildRoom(info, fx) {
       const zc = z - rand(.3, 2.2) - item.len / 2;
       if (zc - item.len / 2 < -SEG_LEN / 2 + .1) break;
       item.obj.position.set(s * HALF_W, 0, zc);
+      g.userData.wallItems.push({ obj: item.obj, side: s, z0: zc - item.len / 2, z1: zc + item.len / 2 });
       if (s > 0) item.obj.rotation.y = Math.PI;
       g.add(item.obj);
       z = zc - item.len / 2;

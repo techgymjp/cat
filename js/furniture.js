@@ -78,12 +78,12 @@ export function plant() {
     leaf.scale.set(.55, .12, 1.1); leaf.position.set(Math.cos(a) * r, y, Math.sin(a) * r);
     leaf.rotation.set(rand(-.5, .5), -a, rand(-.4, .4)); leaf.castShadow = true; g.add(leaf);
   }
-  return { mesh: g, w: 1.0, h: 3.5, d: 1.0 };
+  return { mesh: g, w: 1.0, h: 3.5, d: 1.0, breakable: true };
 }
 export function laundryBasket() {
   const g = group(box(1.6, 1.0, 1.1, mat(pick([0xe8e8e8, 0x8fb7d9, 0xe6a7b8]), { roughness: .4 }), 0, .5, 0));
   for (let i = 0; i < 4; i++) { const c = sphere(.38, mat(pick([0xffffff, 0x4b6ea8, 0xd9d1c0, 0x9b3d3d])), rand(-.4, .4), 1.0, rand(-.2, .2)); c.scale.y = .45; g.add(c); }
-  return { mesh: g, w: 1.6, h: 1.2, d: 1.1 };
+  return { mesh: g, w: 1.6, h: 1.2, d: 1.1, breakable: true };
 }
 export function trashCan() {
   return { mesh: group(cyl(.45, .4, 1.4, mat(pick([0xf0f0f0, 0x3d3d3d, 0x8aa38a]), { roughness: .35 }), 0, .7, 0)), w: .9, h: 1.4, d: .9 };
@@ -106,7 +106,7 @@ export function fan() {
   const guard = new THREE.Mesh(new THREE.TorusGeometry(.75, .04, 6, 28), M.white); head.add(guard);
   for (let i = 0; i < 3; i++) { const b = box(.35, .7, .03, mat(0x9fc9e8, { transparent: true, opacity: .8 }), 0, 0, 0); b.rotation.z = i * 2.09; b.position.set(Math.sin(i * 2.09) * -.3, Math.cos(i * 2.09) * .3, 0); head.add(b); }
   g.add(head);
-  return { mesh: g, w: 1.4, h: 3.5, d: 1.3 };
+  return { mesh: g, w: 1.4, h: 3.5, d: 1.3, breakable: true };
 }
 export function newspaperStack() {
   const g = new THREE.Group();
@@ -224,7 +224,7 @@ export function pedestalVase() {
   const marble = mat(0xe9e5dc, { roughness: .25 });
   const g = group(box(1.0, .2, 1.0, marble, 0, .1, 0), cyl(.32, .36, 2.6, marble, 0, 1.5, 0), box(1.0, .2, 1.0, marble, 0, 2.9, 0));
   const v = sphere(.45, mat(0x1f3b73, { roughness: .2 }), 0, 3.5, 0); v.scale.y = 1.3; g.add(v, cyl(.18, .25, .5, mat(0x1f3b73, { roughness: .2 }), 0, 4.2, 0));
-  return { mesh: g, w: 1.0, h: 4.5, d: 1.0 };
+  return { mesh: g, w: 1.0, h: 4.5, d: 1.0, breakable: true };
 }
 
 // ============ 乗れる家具（プラットフォーム） ============
@@ -264,12 +264,12 @@ export function zataku(maxD) {
   return { mesh: g, w, h, d };
 }
 export function bed(maxD) {
-  const d = Math.min(maxD, 6.8), w = 3.4, h = 1.75;
+  const d = Math.min(maxD, 6.8), w = 3.2, h = 1.75;
   const frame = mat(0xb08a62, { roughness: .5 });
   const duvet = mat(pick([0xdfe7ef, 0xe8dccb, 0x9fb0c4]), { roughness: 1 });
   const g = group(box(w, .9, d, frame, 0, .45, 0), box(w - .2, .7, d - .2, M.white, 0, 1.25, 0), box(w, .25, d * .7, duvet, 0, 1.62, -d * .13));
   g.add(box(w, 2.6, .25, frame, 0, 1.3, d / 2));
-  return { mesh: g, w, h, d };
+  return { mesh: g, w, h, d, edge: true };
 }
 export function desk(maxD) {
   const d = Math.min(maxD, 4), w = 2.1, h = 2.4;
@@ -320,7 +320,7 @@ export function vase() {
   const b = sphere(.32, m, 0, .38, 0); b.scale.y = 1.25;
   const g = group(b, cyl(.12, .16, .3, m, 0, .82, 0));
   for (let i = 0; i < 4; i++) { g.add(cyl(.015, .015, .8, M.leaf, rand(-.1, .1), 1.2, rand(-.1, .1), 5)); g.add(sphere(.12, mat(pick([0xf2c4d0, 0xffffff, 0xf0d060, 0xd94f5c])), rand(-.2, .2), 1.6 + rand(0, .2), rand(-.2, .2))); }
-  return { mesh: g, w: .65, h: 1.8, d: .65 };
+  return { mesh: g, w: .65, h: 1.8, d: .65, breakable: true };
 }
 export function phone() {
   const m = mat(0xf2f0ea, { roughness: .4 });
@@ -334,14 +334,14 @@ export function photoFrame() {
 }
 export function yunomi() {
   const g = group(cyl(.18, .15, .35, mat(pick([0x5b6e4a, 0x8a6a4a, 0x3a4a5a]), { roughness: .3 }), 0, .18, 0), cyl(.22, .22, .04, M.woodDark, 0, .02, 0));
-  return { mesh: g, w: .45, h: .4, d: .45 };
+  return { mesh: g, w: .45, h: .4, d: .45, breakable: true };
 }
 export function kyusu() {
   const m = mat(0x8a3f22, { roughness: .35 });
   const body = sphere(.3, m, 0, .28, 0); body.scale.y = .8;
   const spout = cyl(.04, .08, .35, m, .35, .32, 0, 8); spout.rotation.z = -1.0;
   const handle = cyl(.05, .05, .4, m, 0, .32, .4, 8); handle.rotation.x = 1.4;
-  return { mesh: group(body, spout, handle, sphere(.06, m, 0, .52, 0)), w: .8, h: .55, d: .8 };
+  return { mesh: group(body, spout, handle, sphere(.06, m, 0, .52, 0)), w: .8, h: .55, d: .8, breakable: true };
 }
 export function mikanBasket() {
   const g = group(cyl(.45, .35, .25, mat(0xb08a52, { roughness: 1 }), 0, .13, 0));
@@ -354,7 +354,7 @@ export function remote() {
 export function ichirin() {
   const m = mat(0xe8e2d4, { roughness: .2 });
   const g = group(cyl(.1, .18, .6, m, 0, .3, 0), cyl(.01, .01, .7, M.leaf, .05, .9, 0, 4), sphere(.08, mat(0xd94f5c), .1, 1.25, 0));
-  return { mesh: g, w: .4, h: 1.3, d: .4 };
+  return { mesh: g, w: .4, h: 1.3, d: .4, breakable: true };
 }
 export function pillow() {
   const p = box(1.6, .35, .9, mat(0xffffff, { roughness: 1 }), 0, .18, 0);
@@ -385,7 +385,7 @@ export function books() {
 export function mug() {
   const m = mat(pick([0xffffff, 0xd94f5c, 0x3d6fa8]), { roughness: .3 });
   const h = new THREE.Mesh(new THREE.TorusGeometry(.1, .03, 6, 12), m); h.position.set(.2, .18, 0);
-  return { mesh: group(cyl(.15, .15, .35, m, 0, .18, 0), h), w: .45, h: .35, d: .35 };
+  return { mesh: group(cyl(.15, .15, .35, m, 0, .18, 0), h), w: .45, h: .35, d: .35, breakable: true };
 }
 export function pot() {
   const m = mat(0xb8bcc2, { metalness: .8, roughness: .25 });
@@ -402,7 +402,7 @@ export function riceCooker() {
 export function fruitBowl() {
   const g = group(cyl(.55, .3, .25, mat(0xffffff, { roughness: .3 }), 0, .13, 0));
   g.add(sphere(.18, mat(0xc0392b), -.15, .35, 0), sphere(.18, mat(0xf1c40f), .15, .33, .1), sphere(.17, mat(0x7cb342), 0, .38, -.15));
-  return { mesh: g, w: 1.1, h: .55, d: 1.1 };
+  return { mesh: g, w: 1.1, h: .55, d: 1.1, breakable: true };
 }
 export function cuttingBoard() {
   return { mesh: group(box(1.2, .08, .8, mat(0xe0c9a0), 0, .04, 0), box(.2, .25, .2, mat(0xd94f5c), .2, .16, 0)), w: 1.2, h: .3, d: .8 };
@@ -412,7 +412,7 @@ export function teaSet() {
   const g = group(box(1.4, .05, .9, M.brass, 0, .03, 0));
   const tp = sphere(.25, china, -.35, .3, 0); tp.scale.y = .9; g.add(tp);
   for (const x of [.2, .5]) g.add(cyl(.12, .1, .18, china, x, .15, rand(-.2, .2)));
-  return { mesh: g, w: 1.4, h: .55, d: .9 };
+  return { mesh: g, w: 1.4, h: .55, d: .9, breakable: true };
 }
 export function candlestick() {
   const g = group(cyl(.25, .3, .06, M.brass, 0, .03, 0), cyl(.05, .07, .9, M.brass, 0, .5, 0, 8), cyl(.06, .06, .4, M.white, 0, 1.15, 0, 8), sphere(.05, M.lampOn, 0, 1.4, 0));
@@ -681,7 +681,7 @@ export function goldfishBowl() {
     f.position.set(i ? .15 : -.15, .45 + i * .15, i ? .1 : -.1); f.rotation.y = i * 2;
     g.add(f);
   }
-  return { mesh: g, w: 1.1, h: 1.1, d: 1.1 };
+  return { mesh: g, w: 1.1, h: 1.1, d: 1.1, breakable: true };
 }
 export function piggyBank() {
   const m = mat(pick([0xf4a6b8, 0xf3e3c3, 0x8fc1e3]), { roughness: .25 });
@@ -692,7 +692,7 @@ export function piggyBank() {
   for (const x of [-.18, .18]) { const ear = new THREE.Mesh(new THREE.ConeGeometry(.09, .16, 4), m); ear.position.set(x, .82, -.28); g.add(ear); }
   g.add(box(.18, .02, .04, M.black, 0, .78, 0));
   g.rotation.y = rand(-.6, .6);
-  return { mesh: g, w: .8, h: .9, d: 1.1 };
+  return { mesh: g, w: .8, h: .9, d: 1.1, breakable: true };
 }
 export function dishes() {
   const china = mat(pick([0xffffff, 0xf3ead2, 0xdfe9f2]), { roughness: .15 });
@@ -700,7 +700,7 @@ export function dishes() {
   const n = 3 + (Math.random() * 4 | 0);
   for (let i = 0; i < n; i++) g.add(cyl(.5, .38, .06, china, rand(-.02, .02), .04 + i * .07, rand(-.02, .02), 24));
   g.add(cyl(.22, .16, .3, china, .7, .15, .1, 16), cyl(.22, .16, .3, china, .7, .45, .1, 16));
-  return { mesh: g, w: 1.4, h: .6, d: 1.0 };
+  return { mesh: g, w: 1.4, h: .6, d: 1.0, breakable: true };
 }
 export function smallPlant() {
   const g = group(cyl(.28, .2, .5, mat(pick([0xf3f1ec, 0xa8673f, 0x3a3a3a])), 0, .25, 0), cyl(.25, .25, .03, M.soil, 0, .49, 0));
@@ -710,12 +710,12 @@ export function smallPlant() {
     leaf.position.set(Math.cos(a) * .18, .7 + rand(0, .35), Math.sin(a) * .18); leaf.rotation.set(rand(-.6, .6), -a, rand(-.5, .5));
     leaf.castShadow = true; g.add(leaf);
   }
-  return { mesh: g, w: .6, h: 1.1, d: .6 };
+  return { mesh: g, w: .6, h: 1.1, d: .6, breakable: true };
 }
 export function roomba() {
   const g = group(cyl(.75, .78, .3, mat(0x2b2b2e, { roughness: .3 }), 0, .17, 0, 32), cyl(.5, .5, .02, mat(0x555a60, { metalness: .5, roughness: .3 }), 0, .33, 0, 28), sphere(.06, mat(0x3fd16a, { emissive: 0x2fb050, emissiveIntensity: 1 }), 0, .34, -.3));
   g.add(cyl(.76, .76, .06, mat(0x6b6f74), 0, .22, 0, 32));
-  return { mesh: g, w: 1.5, h: .4, d: 1.5, roam: rand(1.5, 3) * (Math.random() < .5 ? -1 : 1) };
+  return { mesh: g, w: 1.5, h: .4, d: 1.5, roam: rand(1.5, 3) * (Math.random() < .5 ? -1 : 1), breakable: true };
 }
 export function laundryPile() {
   const g = new THREE.Group();
@@ -727,5 +727,31 @@ export function laundryPile() {
     c.castShadow = true; g.add(c);
   }
   const sock = cyl(.1, .1, .5, mat(0xffffff, { roughness: 1 }), .9, .1, .3, 8); sock.rotation.z = Math.PI / 2; g.add(sock);
-  return { mesh: g, w: 2.0, h: .75, d: 1.4 };
+  return { mesh: g, w: 2.0, h: .75, d: 1.4, breakable: true };
+}
+
+// ============ 壁ぎわに置く家具 ============
+// 床置き家具（原点が底面中央）を、壁ぎわ家具の座標（壁面が x=0、部屋側が +x）に変換する
+export function asWall(make, turn = false) {
+  return () => {
+    const o = make(99);
+    const g = new THREE.Group();
+    if (turn) { o.mesh.rotation.y = -Math.PI / 2; o.mesh.position.x = o.d / 2 + .05; }
+    else { o.mesh.position.x = o.w / 2 + .05; }
+    g.add(o.mesh);
+    return { obj: g, len: (turn ? o.w : o.d) + .5 };
+  };
+}
+// 和箪笥
+export function tansu() {
+  const L = 3.4, D = 1.4, H = 4.2;
+  const m = mat(0x7a4a26, { roughness: .4 });
+  const iron = mat(0x1e1e1e, { roughness: .5, metalness: .5 });
+  const g = group(box(D, H, L, m, D / 2, H / 2, 0));
+  for (let i = 0; i < 5; i++) {
+    const y = .5 + i * .8;
+    g.add(box(.02, .03, L - .1, mat(0x4a2a12), D + .01, y + .38, 0));
+    for (const z of [-L / 4, L / 4]) g.add(box(.06, .12, .45, iron, D + .03, y, z));
+  }
+  return { obj: g, len: L + .4 };
 }

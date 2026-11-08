@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { SEG_LEN, SEG_COUNT, PLAY_X, LANES, FLAP_W, pick, rand, disposeTree } from './util.js';
+import { SEG_LEN, SEG_COUNT, HALF_W, PLAY_X, LANES, FLAP_W, pick, rand, disposeTree } from './util.js';
 import { sceneAt, buildRoom } from './scenes.js';
 import { createCat, BALL_R } from './cat.js';
+import { startBgm, stopBgm, setBgmTempo, toggleMute, isMuted } from './bgm.js';
 
 const GRAVITY = 30;
 const JUMP_V = 13.5;
@@ -46,14 +47,50 @@ const rooms = [];      // { group, partition, z, info }
 let obstacles = [];    // { mesh, w, h, d, x, z, y0, kind, full }
 let roomIndex = 0;
 
+// 壊せる物の目印：上にキラキラ、足もとにほんのり光
+const sparkleTex = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grd.addColorStop(0, 'rgba(255,255,230,1)'); grd.addColorStop(.25, 'rgba(255,230,120,.8)'); grd.addColorStop(1, 'rgba(255,200,60,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, 64, 64);
+  g.fillStyle = 'rgba(255,255,240,1)';
+  g.beginPath(); g.moveTo(32, 0); g.lineTo(36, 28); g.lineTo(64, 32); g.lineTo(36, 36); g.lineTo(32, 64); g.lineTo(28, 36); g.lineTo(0, 32); g.lineTo(28, 28); g.closePath(); g.fill();
+  return new THREE.CanvasTexture(c);
+})();
+const glowTex = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(32, 32, 4, 32, 32, 32);
+  grd.addColorStop(0, 'rgba(255,220,110,.75)'); grd.addColorStop(1, 'rgba(255,200,80,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(c);
+})();
+const sparkleMat = new THREE.SpriteMaterial({ map: sparkleTex, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true });
+const glowMat = new THREE.MeshBasicMaterial({ map: glowTex, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true });
+const glowGeo = new THREE.PlaneGeometry(1, 1);
+function addMarker(rec) {
+  const m = new THREE.Group();
+  const sp = new THREE.Sprite(sparkleMat); sp.scale.setScalar(.7); sp.position.y = rec.h + .45; m.add(sp);
+  const sp2 = new THREE.Sprite(sparkleMat); sp2.scale.setScalar(.4); sp2.position.set(rec.w * .4, rec.h * .6, 0); m.add(sp2);
+  const gl = new THREE.Mesh(glowGeo, glowMat); gl.rotation.x = -Math.PI / 2; gl.position.y = .03;
+  gl.scale.set(Math.max(rec.w, 1) * 1.6, Math.max(rec.d, 1) * 1.6, 1); m.add(gl);
+  m.position.set(rec.x, rec.y0, rec.z);
+  m.userData = { sp, sp2, phase: Math.random() * 6 };
+  scene.add(m);
+  rec.marker = m;
+}
+function removeMarker(o) { if (o.marker) { scene.remove(o.marker); o.marker = null; } }
+
 function addObstacle(o, x, z, y0 = 0, kind = 'break', full = false) {
   o.mesh.position.set(x, y0, z);
   scene.add(o.mesh);
   const rec = { ...o, x, z, y0, kind, full };
+  if (kind === 'break') addMarker(rec);
   obstacles.push(rec);
   return rec;
 }
-function removeObstacle(o) { scene.remove(o.mesh); disposeTree(o.mesh); }
+function removeObstacle(o) { scene.remove(o.mesh); disposeTree(o.mesh); removeMarker(o); }
 
 function putSmalls(sc, plat, alongX) {
   const len = alongX ? plat.w - 1 : plat.d;
@@ -68,10 +105,10 @@ function putSmalls(sc, plat, alongX) {
   }
 }
 
-function spawnContent(info, zCenter, difficulty) {
+function spawnContent(info, zCenter, difficulty, roomGroup) {
   if (roomIndex === 0) return; // 最初の部屋は安全
   const sc = info.scene;
-  const top = zCenter + SEG_LEN / 2 - (info.isStart ? 5 : 1);
+  const top = zCenter + SEG_LEN / 2 - (info.isStart ? 11 : 1); // 猫用扉をくぐった直後は何も置かない
   const bottom = zCenter - SEG_LEN / 2 + (info.isEnd ? 9 : 1); // 猫用扉の手前は空けておく
   const rows = 2 + Math.min(2, difficulty * 0.5 | 0);
   const slot = (top - bottom) / rows;
@@ -102,25 +139,33 @@ function spawnContent(info, zCenter, difficulty) {
       addObstacle(gm, x, z, 0, gm.kind);
       if (gm.gimmick === 'puddle') { // 滑った先に障害物
         const ob = pick(sc.obstacles)();
-        addObstacle(ob, THREE.MathUtils.clamp(LANES[others[1]], -PLAY_X + ob.w / 2, PLAY_X - ob.w / 2), z - gm.d / 2 - 2.5, 0, ob.fixed ? 'platform' : 'break');
+        addObstacle(ob, THREE.MathUtils.clamp(LANES[others[1]], -PLAY_X + ob.w / 2, PLAY_X - ob.w / 2), z - gm.d / 2 - 2.5, 0, ob.breakable ? 'break' : 'platform');
       }
       continue;
     }
     if (Math.random() < sc.platformRate) {
       const o = pick(sc.platforms)(slot - 1.5);
-      const x = THREE.MathUtils.clamp(LANES[others[0]], -PLAY_X + o.w / 2, PLAY_X - o.w / 2);
+      let x = THREE.MathUtils.clamp(LANES[others[0]], -PLAY_X + o.w / 2, PLAY_X - o.w / 2);
+      if (o.edge) {
+        // ベッドなどは壁にぴったりつける（重なる壁ぎわ家具は片づける）
+        const side = Math.random() < .5 ? -1 : 1;
+        x = side * (HALF_W - o.w / 2 - .05);
+        for (const wi of roomGroup.userData.wallItems) {
+          if (wi.side === side && wi.z1 + zCenter > z - o.d / 2 - .3 && wi.z0 + zCenter < z + o.d / 2 + .3) wi.obj.visible = false;
+        }
+      }
       if (o.mesh.userData.flipWithLane && x < 0) o.mesh.rotation.y = Math.PI;
       const p = addObstacle(o, x, z, 0, 'platform');
       putSmalls(sc, p, false);
       if (Math.random() < .3 + difficulty * .05) {
         const ob = pick(sc.obstacles)();
-        addObstacle(ob, THREE.MathUtils.clamp(LANES[others[1]], -PLAY_X + ob.w / 2, PLAY_X - ob.w / 2), z + rand(-1, 1), 0, ob.fixed ? 'platform' : 'break');
+        addObstacle(ob, THREE.MathUtils.clamp(LANES[others[1]], -PLAY_X + ob.w / 2, PLAY_X - ob.w / 2), z + rand(-1, 1), 0, ob.breakable ? 'break' : 'platform');
       }
     } else {
       const count = Math.random() < 0.35 + difficulty * 0.05 ? 2 : 1;
       for (const li of others.slice(0, count)) {
         const o = pick(sc.obstacles)();
-        addObstacle(o, THREE.MathUtils.clamp(LANES[li] + rand(-.3, .3), -PLAY_X + o.w / 2, PLAY_X - o.w / 2), z, 0, o.fixed ? 'platform' : 'break');
+        addObstacle(o, THREE.MathUtils.clamp(LANES[li] + rand(-.3, .3), -PLAY_X + o.w / 2, PLAY_X - o.w / 2), z, 0, o.breakable ? 'break' : 'platform');
       }
     }
   }
@@ -137,7 +182,7 @@ function placeRoom(room, z) {
   room.partition = built.partition;
   if (room.partition) Object.assign(room.partition, { z: z + SEG_LEN / 2, angle: 0, av: 0, passed: false, name: info.scene.name });
   scene.add(room.group);
-  spawnContent(info, z, state.distance / 150);
+  spawnContent(info, z, state.distance / 150, room.group);
   roomIndex++;
 }
 
@@ -176,6 +221,7 @@ function startGame() {
   $('over').classList.add('hidden');
   updateHud();
   showBanner('玄関');
+  try { startBgm(audio()); } catch {}
   sfx(660, .08); sfx(880, .1, .08);
 }
 
@@ -302,6 +348,10 @@ renderer.domElement.addEventListener('pointerup', () => {
 });
 renderer.domElement.addEventListener('pointercancel', () => { ptr = null; input.dragX = null; });
 $('startBtn').onclick = startGame;
+const muteBtn = $('mute');
+const showMute = () => { muteBtn.textContent = isMuted() ? '🔇' : '🔊'; };
+showMute();
+muteBtn.onclick = (e) => { e.stopPropagation(); toggleMute(); showMute(); };
 $('retryBtn').onclick = startGame;
 
 // ---------- 当たり判定 ----------
@@ -320,6 +370,7 @@ const dustMat = new THREE.MeshBasicMaterial({ color: 0xfff3d6, transparent: true
 const dustGeo = new THREE.BoxGeometry(.15, .15, .15);
 function smash(o, byCat) {
   o.dead = true;
+  removeMarker(o);
   o.mesh.updateMatrixWorld(true);
   for (const p of [...o.mesh.children]) {
     scene.attach(p);
@@ -338,7 +389,7 @@ function smash(o, byCat) {
     debris.push({ obj: d, v: new THREE.Vector3(rand(-5, 5), rand(0, 8), -state.speed - rand(0, 6)), av: new THREE.Vector3(5, 5, 0), life: .6, shared: true });
   }
   noiseSfx();
-  if (byCat) { state.smash++; state.shake = Math.max(state.shake, .15); sfx(900, .05, .05, 'square', .04); }
+  state.smash++; state.shake = Math.max(state.shake, .15); sfx(900, .05, .05, 'square', .04);
 }
 function updateDebris(dt) {
   for (const d of debris) {
@@ -359,6 +410,7 @@ function hurt(cause) {
   state.cause = cause || 'ゴツン！';
   state.running = false;
   state.crashed = true;
+  stopBgm();
   state.shake = 0.5;
   sfx(150, .3, 0, 'sawtooth', .14);
   noiseSfx(.25, 600, .3);
@@ -379,6 +431,7 @@ function update(dt) {
     const prevZ = state.z;
     state.z -= state.speed * dt;
     state.distance += state.speed * dt;
+    setBgmTempo(150 + (state.speed - 12) * 2.5); // 速くなるほど曲もアップテンポに
 
     // 左右移動（すべてプレイヤーが操作）
     let targetVx = ((input.right ? 1 : 0) - (input.left ? 1 : 0)) * 9;
@@ -446,7 +499,7 @@ function update(dt) {
           hurt();
         }
       } else if (state.onFloor) {
-        if (hitsBox(o, BALL_R * 0.85)) { smash(o, false); hurt(); }
+        if (hitsBox(o, BALL_R * 0.95)) smash(o, false); // ボールでも壊せる
       } else if (hitsBox(o, BALL_R * 1.25)) {
         smash(o, true);
       }
@@ -463,6 +516,7 @@ function update(dt) {
       o.x += o.roam * dt;
       if (Math.abs(o.x) > PLAY_X - o.w / 2) { o.x = Math.sign(o.x) * (PLAY_X - o.w / 2); o.roam *= -1; }
       o.mesh.position.x = o.x;
+      if (o.marker) o.marker.position.x = o.x;
       o.mesh.rotation.y = o.roam > 0 ? -Math.PI / 2 : Math.PI / 2;
     }
 
@@ -496,6 +550,13 @@ function update(dt) {
     updateHud();
   }
   updateDebris(dt);
+  for (const o of obstacles) {
+    if (!o.marker) continue;
+    const u = o.marker.userData, tt = clock.elapsedTime * 5 + u.phase;
+    u.sp.scale.setScalar(.55 + Math.sin(tt) * .2); u.sp.material.rotation = tt * .1;
+    u.sp2.scale.setScalar(Math.max(0, Math.sin(tt * 1.3 + 2)) * .45);
+    u.sp.position.y = o.h + .45 + Math.sin(tt * .5) * .08;
+  }
 
   // 猫用扉のフラップと、カメラが近づいたら透ける壁
   for (const r of rooms) {
