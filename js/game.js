@@ -3,7 +3,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { SEG_LEN, SEG_COUNT, HALF_W, PLAY_X, LANES, FLAP_W, pick, rand, disposeTree } from './util.js';
 import { SCENES, sceneAt, buildRoom } from './scenes.js';
 import { createCat, BALL_R } from './cat.js';
-import { startBgm, stopBgm, setBgmTempo, toggleMute, isMuted } from './bgm.js';
+import { startBgm, stopBgm, setBgmTempo, toggleMute, isMuted, prepareBgm } from './bgm.js';
 
 const GRAVITY = 30;
 const JUMP_V = 13.5;
@@ -186,6 +186,7 @@ function placeRoom(room, z) {
   roomIndex++;
 }
 
+let worldFresh = false;
 function resetWorld() {
   for (const o of obstacles) removeObstacle(o);
   for (const d of debris) { scene.remove(d.obj); disposeTree(d.obj); }
@@ -218,7 +219,9 @@ function startGame() {
   if (!ready) return;
   prepareSounds();
   Object.assign(state, { running: true, x: 0, y: 0, z: 0, vy: 0, vx: 0, speed: 12, distance: 0, smash: 0, invincible: 0, grounded: true, onFloor: true, roll: 0, slip: 0 });
-  resetWorld();
+  if (!worldFresh) resetWorld(); // ふつうはゲームオーバー画面のあいだに作り直し済み
+  worldFresh = false;
+  clock.getDelta();
   $('title').classList.add('hidden');
   $('over').classList.add('hidden');
   updateHud();
@@ -236,6 +239,13 @@ function gameOver() {
   $('best').textContent = `ベスト ${best}`;
   $('over').classList.remove('hidden');
   sfx(400, .15); sfx(300, .2, .15); sfx(200, .35, .35);
+  // 次のプレイ用の家を、ゲームオーバー画面のあいだに作り直しておく（スタート時の引っかかり防止）
+  setTimeout(() => {
+    if (state.running) return;
+    Object.assign(state, { x: 0, y: 0, z: 0, vy: 0, vx: 0, distance: 0, grounded: true, onFloor: true, slip: 0 });
+    resetWorld();
+    worldFresh = true;
+  }, 700);
 }
 
 function updateHud() {
@@ -298,8 +308,8 @@ const noiseBufs = {};
 function noiseBuf(dur, shape = 'decay') {
   const key = shape + dur;
   if (!noiseBufs[key]) {
-    const ac = audio(), len = Math.floor(ac.sampleRate * dur);
-    const buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
+    const len = Math.floor(44100 * dur); // 音を鳴らす準備（AudioContext）がなくても作れる
+    const buf = new AudioBuffer({ numberOfChannels: 1, length: len, sampleRate: 44100 }), d = buf.getChannelData(0);
     for (let i = 0; i < len; i++) {
       d[i] = (Math.random() * 2 - 1) * (shape === 'hiss' ? Math.min(1, i / (len * .1)) * Math.pow(1 - i / len, 1.5) : Math.pow(1 - i / len, 2));
     }
@@ -307,13 +317,11 @@ function noiseBuf(dur, shape = 'decay') {
   }
   return noiseBufs[key];
 }
+function buildSoundData() {
+  try { for (const d of [.35, .25, .15, .3, 1.4]) noiseBuf(d); noiseBuf(.7, 'hiss'); } catch {}
+}
 function prepareSounds() {
-  try {
-    const ac = audio();
-    if (ac.state === 'suspended') ac.resume();
-    for (const d of [.35, .25, .15, .3, 1.4]) noiseBuf(d);
-    noiseBuf(.7, 'hiss');
-  } catch {}
+  try { const ac = audio(); if (ac.state === 'suspended') ac.resume(); } catch {}
 }
 function noiseSfx(dur = .35, cutoff = 1800, vol = .35) {
   try {
@@ -654,6 +662,8 @@ let ready = false;
 async function warmUp() {
   const btn = $('startBtn');
   btn.disabled = true; btn.textContent = 'じゅんび中…';
+  const bgmReady = prepareBgm(); // BGM の音声データ作りを並行して進める
+  buildSoundData();              // 効果音の音声データも先に作る
   await new Promise(r => setTimeout(r, 50));
   const temp = new THREE.Group();
   SCENES.forEach((sc, i) => {
@@ -681,14 +691,16 @@ async function warmUp() {
   temp.remove(dust); // 破片の形は使い回すので捨てない
   disposeTree(temp);
   removeMarker(mk);
+  await bgmReady;
   ready = true;
   btn.disabled = false; btn.textContent = 'スタート';
 }
 
 resetWorld();
+worldFresh = true;
 camera.position.set(0, 2.8, 5.5);
 animate();
 warmUp();
 
 // テスト用フック
-window.__catball = { state, startGame, obstacles: () => obstacles, rooms: () => rooms };
+window.__catball = { state, startGame, obstacles: () => obstacles, rooms: () => rooms, fresh: () => worldFresh };
