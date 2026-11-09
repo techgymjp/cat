@@ -79,8 +79,8 @@ export const SCENES = [
     wallItems: [F.kitchenUnit, F.fridge, F.shokkidana, F.asWall(F.pedalBin), () => F.wallWindow()],
     obstacles: [F.roomba, F.plant, () => F.diningChair(), F.kitchenWagon],
     platforms: [F.diningTable, F.island], platformRate: .45,
-    barriers: [F.kitchenCounter], barrierRate: .8,
-    gimmicks: [G.puddle], gimmickRate: .8,
+    barriers: [F.kitchenCounter], barrierRate: .5,
+    gimmicks: [G.puddle], gimmickRate: .5,
     smalls: [F.dishes, F.dishes, F.fruitBowl, F.mug, F.smallPlant, F.vase],
   },
   {
@@ -245,10 +245,11 @@ export function sceneAt(roomIndex) {
 
 // ---------- 猫用扉つきの間仕切り ----------
 const fusumaTex = once('fusumaTex', () => T.fusumaPaper()); // 画像は1枚を使い回す
-// 開口 [fx-FLAP_W/2, fx+FLAP_W/2] × [0, FLAP_H] を空けた板を作る
+let holeW = FLAP_W; // 猫用扉の開口の幅（最初の数枚は広い）
+// 開口 [fx-holeW/2, fx+holeW/2] × [0, FLAP_H] を空けた板を作る
 function panelWithHole(x0, x1, y0, y1, fx, thick, m, z = 0) {
   const g = new THREE.Group();
-  const hx0 = fx - FLAP_W / 2, hx1 = fx + FLAP_W / 2;
+  const hx0 = fx - holeW / 2, hx1 = fx + holeW / 2;
   const add = (a, b, c, d) => { if (b - a > .01 && d - c > .01) g.add(box(b - a, d - c, thick, m, (a + b) / 2, (c + d) / 2, z)); };
   if (hx1 <= x0 || hx0 >= x1) { add(x0, x1, y0, y1); return g; }
   add(x0, Math.max(x0, hx0), y0, y1);
@@ -257,7 +258,8 @@ function panelWithHole(x0, x1, y0, y1, fx, thick, m, z = 0) {
   return g;
 }
 
-function buildPartition(prevScene, nextScene, fx) {
+function buildPartition(prevScene, nextScene, fx, fw = FLAP_W) {
+  holeW = fw;
   const g = new THREE.Group();
   const fadeMats = [];
   const fade = (m) => { const c = m.clone(); c.transparent = true; fadeMats.push(c); return c; };
@@ -297,7 +299,7 @@ function buildPartition(prevScene, nextScene, fx) {
       g.add(box(pw, .08, T_, black, (x0 + x1) / 2, top - .04, zOff));
       const pull = new THREE.Mesh(new THREE.CylinderGeometry(.13, .13, T_ + .04, 14), black);
       pull.rotation.x = Math.PI / 2; pull.position.set(i % 2 ? x0 + .45 : x1 - .45, 3, zOff);
-      if (Math.abs(pull.position.x - fx) > FLAP_W / 2 + .2) g.add(pull);
+      if (Math.abs(pull.position.x - fx) > holeW / 2 + .2) g.add(pull);
     }
   } else {
     // ドアつきの壁。ドアの下に猫用扉。
@@ -316,16 +318,16 @@ function buildPartition(prevScene, nextScene, fx) {
   // 猫用扉（フラップ）
   const frameCol = fade(mat(nextScene.japanese ? 0xf2f2ee : 0x4a2c1c, { roughness: .4 }));
   for (const zz of [-T_ / 2 - .08, T_ / 2 + .08]) {
-    g.add(box(.18, FLAP_H + .18, .14, frameCol, fx - FLAP_W / 2 - .09, (FLAP_H + .18) / 2, zz));
-    g.add(box(.18, FLAP_H + .18, .14, frameCol, fx + FLAP_W / 2 + .09, (FLAP_H + .18) / 2, zz));
-    g.add(box(FLAP_W + .36, .2, .14, frameCol, fx, FLAP_H + .09, zz));
+    g.add(box(.18, FLAP_H + .18, .14, frameCol, fx - holeW / 2 - .09, (FLAP_H + .18) / 2, zz));
+    g.add(box(.18, FLAP_H + .18, .14, frameCol, fx + holeW / 2 + .09, (FLAP_H + .18) / 2, zz));
+    g.add(box(holeW + .36, .2, .14, frameCol, fx, FLAP_H + .09, zz));
   }
   const pivot = new THREE.Group();
   pivot.position.set(fx, FLAP_H, 0);
   const flapM = new THREE.MeshStandardMaterial({ color: 0x9aa4ab, transparent: true, opacity: .55, roughness: .1, metalness: .1 });
   fadeMats.push(flapM);
   flapM.userData.baseOpacity = .55;
-  const flap = new THREE.Mesh(new THREE.BoxGeometry(FLAP_W - .08, FLAP_H - .06, .05), flapM);
+  const flap = new THREE.Mesh(new THREE.BoxGeometry(holeW - .08, FLAP_H - .06, .05), flapM);
   flap.position.y = -(FLAP_H - .06) / 2;
   pivot.add(flap);
   g.add(pivot);
@@ -335,7 +337,7 @@ function buildPartition(prevScene, nextScene, fx) {
 }
 
 // ---------- 部屋セグメントの組み立て ----------
-export function buildRoom(info, fx) {
+export function buildRoom(info, fx, flapW = FLAP_W) {
   const { scene, segIdx, isStart, prevScene } = info;
   const g = new THREE.Group();
   g.userData.wallItems = [];
@@ -390,7 +392,8 @@ export function buildRoom(info, fx) {
 
   let partition = null;
   if (isStart && prevScene) {
-    partition = buildPartition(prevScene, scene, fx);
+    partition = buildPartition(prevScene, scene, fx, flapW);
+    partition.flapW = flapW;
     g.add(partition.group);
   }
   return { group: g, partition };

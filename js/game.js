@@ -108,6 +108,7 @@ function putSmalls(sc, plat, alongX) {
 }
 
 function spawnContent(info, zCenter, difficulty, roomGroup) {
+  const firstLap = roomIndex < FIRST_LAP_SEGS;
   if (roomIndex === 0) return; // 最初の部屋は安全
   const sc = info.scene;
   const top = zCenter + SEG_LEN / 2 - (info.isStart ? 11 : 1); // 猫用扉をくぐった直後は何も置かない
@@ -117,8 +118,12 @@ function spawnContent(info, zCenter, difficulty, roomGroup) {
   let barrierRow = -1;
   if (sc.id === 'genkan' && info.segIdx === 1) barrierRow = 0;               // 上がり框
   else if (sc.barriers && Math.random() < sc.barrierRate) barrierRow = Math.random() * rows | 0;
+  // 猫用扉の手前の列には通せんぼ家具を置かない（高い家具から降りる途中に扉に着かないように）
+  if (info.isEnd && barrierRow === rows - 1) barrierRow = rows > 1 && !(sc.id === 'genkan') ? 0 : -1;
+  if (sc.id === 'genkan' && info.segIdx === 1) barrierRow = 0;
   let gimmickRow = -1;
-  if (sc.gimmicks && Math.random() < sc.gimmickRate) {
+  // 通せんぼ家具と仕掛けは同じ区画に重ねない
+  if (sc.gimmicks && barrierRow < 0 && Math.random() < sc.gimmickRate) {
     gimmickRow = Math.random() * rows | 0;
     if (gimmickRow === barrierRow) gimmickRow = (gimmickRow + 1) % rows;
     if (gimmickRow === barrierRow) gimmickRow = -1;
@@ -138,6 +143,7 @@ function spawnContent(info, zCenter, difficulty, roomGroup) {
       const x = gm.gimmick === 'dog'
         ? (Math.random() < .5 ? -1 : 1) * (PLAY_X - gm.w / 2)
         : THREE.MathUtils.clamp(LANES[others[0]], -PLAY_X + gm.w / 2, PLAY_X - gm.w / 2);
+      if (firstLap) gm.gentle = true; // 1周目はやさしく（掃除機は追いかけてこない）
       addObstacle(gm, x, z, 0, gm.kind);
       if (gm.gimmick === 'puddle') { // 滑った先に障害物
         const ob = pick(sc.obstacles)();
@@ -176,7 +182,9 @@ function spawnContent(info, zCenter, difficulty, roomGroup) {
 function placeRoom(room, z) {
   if (room.group) { scene.remove(room.group); disposeTree(room.group); }
   const info = sceneAt(roomIndex);
-  const built = buildRoom(info, pick(LANES));
+  // 最初の3枚の猫用扉は広め
+  if (info.isStart && roomIndex > 0) doorCount++;
+  const built = buildRoom(info, pick(LANES), doorCount <= 3 ? 2.6 : FLAP_W);
   room.group = built.group;
   room.group.position.z = z;
   room.z = z;
@@ -189,7 +197,10 @@ function placeRoom(room, z) {
 }
 
 let worldFresh = false;
+let doorCount = 0;
+const FIRST_LAP_SEGS = SCENES.reduce((a, sc) => a + sc.segs, 0);
 function resetWorld() {
+  doorCount = 0;
   for (const o of obstacles) removeObstacle(o);
   for (const d of debris) { scene.remove(d.obj); disposeTree(d.obj); }
   obstacles = []; debris = [];
@@ -604,7 +615,7 @@ function update(dt) {
     if (part && prevZ + BALL_R > part.z && state.z - BALL_R * .6 <= part.z && !part.checked) {
       // ボールの姿で、フラップの幅におさまっていないと壁にぶつかる
       part.checked = true;
-      const inX = Math.abs(state.x - part.fx) < FLAP_W / 2 - BALL_R * .55;
+      const inX = Math.abs(state.x - part.fx) < (part.flapW || FLAP_W) / 2 - BALL_R * .55;
       const inY = state.onFloor || state.y < .25;
       if (!inX || !inY) {
         state.z = part.z + BALL_R * .7;

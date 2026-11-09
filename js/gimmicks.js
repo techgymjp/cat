@@ -23,8 +23,8 @@ export function vacuumChaser() {
       const dz = o.z - state.z;
       if (dz > -40 && !o.started) { o.started = true; sfx.vacuum(); }
       if (!o.started || !state.running) return;
-      o.z += 5 * dt;                                                  // こちらへ向かってくる
-      if (dz < -2) o.x += THREE.MathUtils.clamp(state.x - o.x, -1, 1) * 1.6 * dt; // 左右に追う
+      o.z += (o.gentle ? 3 : 5) * dt;                                  // こちらへ向かってくる
+      if (dz < -2 && !o.gentle) o.x += THREE.MathUtils.clamp(state.x - o.x, -1, 1) * 1.6 * dt; // 左右に追う（1周目はまっすぐ来るだけ）
       o.x = THREE.MathUtils.clamp(o.x, -PLAY_X + o.w / 2, PLAY_X - o.w / 2);
       o.mesh.position.set(o.x, 0, o.z);
       o.mesh.rotation.y = Math.PI + Math.sin(o.z * 2) * .15;
