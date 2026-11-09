@@ -4,6 +4,6 @@
     <string name="title_activity_main">猫ボール</string>
     <string name="package_name">jp.techgym.cat</string>
     <string name="custom_url_scheme">jp.techgym.cat</string>
-    <!-- AdMob のアプリ ID。本番の ID が届くまでは Google 公式のテスト用 ID（起動に必要） -->
-    <string name="admob_app_id">ca-app-pub-3940256099942544~3347511713</string>
+    <!-- AdMob のアプリ ID（Android アプリ「猫ボール」） -->
+    <string name="admob_app_id">ca-app-pub-6411535997477460~9754859569</string>
 </resources>

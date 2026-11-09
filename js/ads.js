@@ -11,11 +11,11 @@ window.Ads = (() => {
         rewarded: 'ca-app-pub-3940256099942544/5224354917',
         banner: 'ca-app-pub-3940256099942544/6300978111',
       },
-      // 本番の広告ユニット（AdMob の Android アプリ「猫ボール」）。届いたら入れる。空の種類は本番ビルドで出さない
+      // 本番の広告ユニット（AdMob の Android アプリ「猫ボール」）。空の種類は本番ビルドで出さない
       production: {
         interstitial: '',
         rewarded: '',
-        banner: '',
+        banner: 'ca-app-pub-6411535997477460/1465306009',
       },
     },
     ios: {
