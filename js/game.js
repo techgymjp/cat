@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { SEG_LEN, SEG_COUNT, HALF_W, PLAY_X, LANES, FLAP_W, pick, rand, disposeTree } from './util.js';
-import { SCENES, sceneAt, buildRoom } from './scenes.js';
+import { SCENES, sceneAt, buildRoom, buildRoomSteps, wallItemFrom } from './scenes.js';
 import { createCat, BALL_R } from './cat.js';
 import { t, sceneName, lang, setLang, applyStatic } from './i18n.js';
 const tr = t; // update() の中では t が経過時間の変数名と重なるので別名で使う
@@ -12,10 +12,11 @@ const JUMP_V = 13.5;
 
 // ---------- 描画まわり ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const MOBILE = matchMedia('(pointer: coarse)').matches; // スマホ・タブレット
+renderer.setPixelRatio(Math.min(devicePixelRatio, MOBILE ? 1.5 : 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = MOBILE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 document.body.appendChild(renderer.domElement);
@@ -32,7 +33,7 @@ const camera = new THREE.PerspectiveCamera(65, innerWidth / innerHeight, 0.1, 40
 scene.add(new THREE.HemisphereLight(0xfff4e0, 0x7a5c40, 1.0));
 const sun = new THREE.DirectionalLight(0xffecd0, 1.6);
 sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.mapSize.set(MOBILE ? 1024 : 2048, MOBILE ? 1024 : 2048);
 sun.shadow.bias = -0.0005;
 Object.assign(sun.shadow.camera, { left: -10, right: 10, top: 14, bottom: -14, near: 1, far: 50 });
 scene.add(sun, sun.target);
@@ -107,9 +108,9 @@ function putSmalls(sc, plat, alongX) {
   }
 }
 
-function spawnContent(info, zCenter, difficulty, roomGroup) {
-  const firstLap = roomIndex < FIRST_LAP_SEGS;
-  if (roomIndex === 0) return; // 最初の部屋は安全
+function spawnContent(info, zCenter, difficulty, roomGroup, idx) {
+  const firstLap = idx < FIRST_LAP_SEGS;
+  if (idx === 0) return; // 最初の部屋は安全
   const sc = info.scene;
   const top = zCenter + SEG_LEN / 2 - (info.isStart ? 11 : 1); // 猫用扉をくぐった直後は何も置かない
   const bottom = zCenter - SEG_LEN / 2 + (info.isEnd ? 16 : 1); // 猫用扉の手前は空けておく（高い家具から降りて、扉にねらいを合わせる余裕）
@@ -179,21 +180,43 @@ function spawnContent(info, zCenter, difficulty, roomGroup) {
   }
 }
 
+// 部屋の組み立ては「ジョブ」にして、毎フレーム少しずつ進める（部屋が変わる瞬間に止まらないように）。
+// 新しい部屋はずっと先（6部屋先）に置くので、見えるまでに組み立てが終わる。
+const jobs = []; // { room, it }
 function placeRoom(room, z) {
-  if (room.group) { scene.remove(room.group); disposeTree(room.group); }
-  const info = sceneAt(roomIndex);
+  const idx = roomIndex++;
+  const info = sceneAt(idx);
   // 最初の3枚の猫用扉は広め
-  if (info.isStart && roomIndex > 0) doorCount++;
-  const built = buildRoom(info, pick(LANES), doorCount <= 3 ? 2.6 : FLAP_W);
-  room.group = built.group;
-  room.group.position.z = z;
-  room.z = z;
-  room.info = info;
-  room.partition = built.partition;
-  if (room.partition) Object.assign(room.partition, { z: z + SEG_LEN / 2, angle: 0, av: 0, passed: false, sceneId: info.scene.id });
-  scene.add(room.group);
-  spawnContent(info, z, state.distance / 150, room.group);
-  roomIndex++;
+  if (info.isStart && idx > 0) doorCount++;
+  const flapW = doorCount <= 3 ? 2.6 : FLAP_W;
+  const old = room.group;
+  room.group = null; room.partition = null;
+  room.z = z; room.info = info;
+  const difficulty = state.distance / 150;
+  jobs.push({
+    room,
+    it: (function* () {
+      if (old) { scene.remove(old); disposeTree(old); yield; }
+      const steps = buildRoomSteps(info, pick(LANES), flapW);
+      let r;
+      while (!(r = steps.next()).done) yield;
+      const built = r.value;
+      built.group.position.z = z;
+      if (built.partition) Object.assign(built.partition, { z: z + SEG_LEN / 2, angle: 0, av: 0, passed: false, sceneId: info.scene.id });
+      scene.add(built.group);
+      room.group = built.group;
+      room.partition = built.partition;
+      yield;
+      spawnContent(info, z, difficulty, room.group, idx);
+    })(),
+  });
+}
+// 1フレームに使う時間（ミリ秒）の範囲でジョブを進める。budget = Infinity なら全部終わらせる
+function runJobs(budget) {
+  const t0 = performance.now();
+  while (jobs.length && performance.now() - t0 < budget) {
+    if (jobs[0].it.next().done) jobs.shift();
+  }
 }
 
 let worldFresh = false;
@@ -206,7 +229,9 @@ function resetWorld() {
   obstacles = []; debris = [];
   roomIndex = 0;
   if (!rooms.length) for (let i = 0; i < SEG_COUNT; i++) rooms.push({ group: null, z: 0 });
+  jobs.length = 0;
   rooms.forEach((r, i) => placeRoom(r, -i * SEG_LEN + SEG_LEN / 2 - 4));
+  runJobs(Infinity);
 }
 
 // 次に通る猫用扉
@@ -665,6 +690,9 @@ function update(dt) {
       }
     }
     obstacles = obstacles.filter(o => { if (o.z - o.d / 2 > state.z + 15) { removeObstacle(o); return false; } return true; });
+    // 先の部屋の組み立てを少しずつ進める。もし近くまで来てもまだなら、その場で仕上げる
+    if (jobs.length && jobs[0].room.z > state.z - SEG_LEN * 3) runJobs(Infinity);
+    else runJobs(MOBILE ? 4 : 3);
     updateHud();
   }
   updateDebris(dt);
@@ -775,6 +803,8 @@ async function warmUp() {
   await new Promise(r => setTimeout(r, 50));
   const temp = new THREE.Group();
   SCENES.forEach((sc, i) => {
+    // 壁ぎわ家具の見本を先に作っておく（ゲーム中はコピーするだけ）
+    for (const make of sc.wallItems) for (let k = 0; k < 3; k++) wallItemFrom(make);
     const prev = SCENES[(i + SCENES.length - 1) % SCENES.length];
     temp.add(buildRoom({ scene: sc, segIdx: 0, isStart: true, isEnd: false, prevScene: prev }, 0).group);
     if (sc.id === 'genkan') temp.add(buildRoom({ scene: sc, segIdx: 1, isStart: false, isEnd: true, prevScene: sc }, 0).group);
@@ -817,4 +847,5 @@ window.__catball = {
   // シミュレーション用：描画を止めて、dt 秒ずつゲームを進める
   sim(on) { simMode = on; },
   step(dt) { update(dt); },
+  drawCalls() { renderer.render(scene, camera); return renderer.info.render.calls; }, // 計測用
 };

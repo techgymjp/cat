@@ -6,7 +6,8 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 // ・模様：頂点カラーで、体の位置から縞・白い腹・口元を塗る（パーツをまたいで模様がつながる）
 
 export const BALL_R = 0.7;
-const SHELLS = 10;
+// 毛の層の数（スマホでは少なめにして軽く）
+const SHELLS = matchMedia('(pointer: coarse)').matches ? 6 : 10;
 
 // ---------- 毛のシェル用マテリアル ----------
 const furMatCache = new Map();
@@ -197,8 +198,8 @@ export function createCat(pal = CHATORA) {
   const cat = new THREE.Group();
 
   // ---------- 丸まった姿（床の上でころがる） ----------
-  const ballForm = new THREE.Group();
-  const ballSpin = new THREE.Group();
+  const ballForm = new THREE.Group(); ballForm.name = 'ballForm';
+  const ballSpin = new THREE.Group(); ballSpin.name = 'ballSpin';
   ballForm.add(ballSpin);
   {
     const headZ = -0.5, headY = 0.2;
@@ -225,7 +226,7 @@ export function createCat(pal = CHATORA) {
   cat.add(ballForm);
 
   // ---------- ネコの姿（ジャンプ中・家具の上） ----------
-  const catForm = new THREE.Group();
+  const catForm = new THREE.Group(); catForm.name = 'catForm';
   {
     const body = [
       paint(S(0.4, 0, 0.05, 0, 0.95, 0.92, 1.75), tabby('z', 12)),        // 胴
@@ -250,6 +251,7 @@ export function createCat(pal = CHATORA) {
     mouth.scale.set(1.2, 0.8, 0.5); mouth.position.set(0, 0.3, -1.26); mouth.visible = false;
     catForm.add(mouth);
     catForm.userData.mouth = mouth;
+    mouth.name = 'mouth';
   }
   // 足（付け根を軸に動かす）
   const legs = [];
@@ -257,6 +259,7 @@ export function createCat(pal = CHATORA) {
   for (const [x, y, z, front] of legDefs) {
     const pivot = new THREE.Group();
     pivot.position.set(x, y, z);
+    pivot.name = 'leg' + legs.length;
     const off = new THREE.Vector3(x, y, z);
     const parts = front ? [
       paint(CAP(0.11, 0.38, 0, -0.32, 0), tabby('y', 22), off),
@@ -273,7 +276,7 @@ export function createCat(pal = CHATORA) {
     legs.push(pivot);
   }
   // しっぽ（付け根を軸にゆらす）
-  const tail = new THREE.Group();
+  const tail = new THREE.Group(); tail.name = 'tail';
   tail.position.set(0, 0.15, 0.72);
   addFur(tail, tailGeo([
     new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0.05, 0.3), new THREE.Vector3(0, 0.18, 0.65),
@@ -284,4 +287,19 @@ export function createCat(pal = CHATORA) {
   cat.add(catForm);
 
   return { cat, ballForm, ballSpin, catForm, legs, tail };
+}
+
+// 同じ毛色のネコを何匹も出すとき用：1匹目を見本にして、形を共有したコピーを作る（毎回作るより速い）
+const catTemplates = new Map();
+export function cloneCat(pal) {
+  if (!catTemplates.has(pal)) {
+    const tpl = createCat(pal);
+    tpl.cat.traverse(o => { if (o.geometry) o.geometry.userData.shared = true; });
+    catTemplates.set(pal, tpl);
+  }
+  const cat = catTemplates.get(pal).cat.clone(true);
+  const byName = (n) => cat.getObjectByName(n);
+  const catForm = byName('catForm');
+  catForm.userData = { mouth: byName('mouth') };
+  return { cat, ballForm: byName('ballForm'), ballSpin: byName('ballSpin'), catForm, legs: [0, 1, 2, 3].map(i => byName('leg' + i)), tail: byName('tail') };
 }

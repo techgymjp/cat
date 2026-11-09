@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { SEG_LEN, HALF_W, WALL_H, FLAP_W, FLAP_H, M, mat, box, plane, group, rand, pick } from './util.js';
+import { SEG_LEN, HALF_W, WALL_H, FLAP_W, FLAP_H, M, mat, box, plane, group, rand, pick, mergeMeshes, markShared } from './util.js';
 import * as T from './textures.js';
 import * as F from './furniture.js';
 import * as G from './gimmicks.js';
@@ -348,66 +348,101 @@ function buildPartition(prevScene, nextScene, fx, fw = FLAP_W) {
 }
 
 // ---------- 部屋セグメントの組み立て ----------
-export function buildRoom(info, fx, flapW = FLAP_W) {
+// 壁ぎわ家具は種類ごとに3パターンまで見本を作って取っておき、あとはそのコピーを置く。
+// （本棚の本や植木鉢など部品の多い物を毎回作るとスマホで引っかかるため）
+// 魚が泳ぐ水槽など、動きのある物は毎回作る。
+const WALL_VARIANTS = 3;
+const wallCache = new Map();
+export function wallItemFrom(make) {
+  let vs = wallCache.get(make);
+  if (vs === 'live') return make();
+  if (!vs) wallCache.set(make, vs = []);
+  if (vs.length < WALL_VARIANTS) {
+    const it = make();
+    if (it.obj.userData.anim) { wallCache.set(make, 'live'); return it; }
+    mergeMeshes(it.obj);
+    markShared(it.obj);
+    vs.push(it);
+  }
+  const v = pick(vs);
+  return { obj: v.obj.clone(true), len: v.len };
+}
+
+// 部屋を少しずつ組み立てる（壁ぎわ家具1つごとに yield）。ゲーム中は先の部屋をこれで毎フレーム少しずつ作る
+export function* buildRoomSteps(info, fx, flapW = FLAP_W) {
   const { scene, segIdx, isStart, prevScene } = info;
   const g = new THREE.Group();
   g.userData.wallItems = [];
   g.userData.anims = []; // 壁ぎわの水槽の魚など、動くもの
+  const shell = new THREE.Group(); // 床・壁・天井・照明など、動かない部分
+  g.add(shell);
 
   const floor = plane(HALF_W * 2, SEG_LEN, scene.floor(segIdx));
-  floor.rotation.x = -Math.PI / 2; g.add(floor);
+  floor.rotation.x = -Math.PI / 2; shell.add(floor);
   if (scene.rug) {
     const rug = plane(8.6, SEG_LEN * .7, scene.rug());
-    rug.rotation.x = -Math.PI / 2; rug.position.y = .015; g.add(rug);
+    rug.rotation.x = -Math.PI / 2; rug.position.y = .015; shell.add(rug);
   }
   const ceil = plane(HALF_W * 2, SEG_LEN, scene.ceil());
-  ceil.rotation.x = Math.PI / 2; ceil.position.y = WALL_H; g.add(ceil);
+  ceil.rotation.x = Math.PI / 2; ceil.position.y = WALL_H; shell.add(ceil);
 
   for (const s of [-1, 1]) {
     const wall = plane(SEG_LEN, WALL_H, scene.wall());
-    wall.rotation.y = -s * Math.PI / 2; wall.position.set(s * HALF_W, WALL_H / 2, 0); g.add(wall);
-    g.add(box(.12, .35, SEG_LEN, scene.base, s * (HALF_W - .06), .175, 0));
-    if (scene.wainscot) { const w = F.wainscot(SEG_LEN, scene.wainscot); w.position.x = s * HALF_W; if (s > 0) w.rotation.y = Math.PI; g.add(w); }
-    if (scene.cornice) g.add(box(.35, .45, SEG_LEN, M.white, s * (HALF_W - .17), WALL_H - .22, 0));
+    wall.rotation.y = -s * Math.PI / 2; wall.position.set(s * HALF_W, WALL_H / 2, 0); shell.add(wall);
+    shell.add(box(.12, .35, SEG_LEN, scene.base, s * (HALF_W - .06), .175, 0));
+    if (scene.wainscot) { const w = F.wainscot(SEG_LEN, scene.wainscot); w.position.x = s * HALF_W; if (s > 0) w.rotation.y = Math.PI; shell.add(w); }
+    if (scene.cornice) shell.add(box(.35, .45, SEG_LEN, M.white, s * (HALF_W - .17), WALL_H - .22, 0));
     if (scene.japanese) {
-      g.add(box(.25, .35, SEG_LEN, M.woodLight, s * (HALF_W - .12), 6.15, 0)); // 長押
-      for (let z = -SEG_LEN / 2; z < SEG_LEN / 2; z += 6) g.add(box(.35, WALL_H, .35, M.woodLight, s * (HALF_W - .12), WALL_H / 2, z)); // 柱
-    }
-
-    // 壁ぎわの家具
-    let z = SEG_LEN / 2 - (isStart ? .8 : .1);
-    for (let n = 0; n < 8; n++) {
-      const item = pick(scene.wallItems)();
-      const zc = z - rand(.3, 2.2) - item.len / 2;
-      if (zc - item.len / 2 < -SEG_LEN / 2 + .1) break;
-      item.obj.position.set(s * HALF_W, 0, zc);
-      g.userData.wallItems.push({ obj: item.obj, side: s, z0: zc - item.len / 2, z1: zc + item.len / 2 });
-      if (item.obj.userData.anim) g.userData.anims.push(item.obj.userData.anim);
-      if (s > 0) item.obj.rotation.y = Math.PI;
-      g.add(item.obj);
-      z = zc - item.len / 2;
+      shell.add(box(.25, .35, SEG_LEN, M.woodLight, s * (HALF_W - .12), 6.15, 0)); // 長押
+      for (let z = -SEG_LEN / 2; z < SEG_LEN / 2; z += 6) shell.add(box(.35, WALL_H, .35, M.woodLight, s * (HALF_W - .12), WALL_H / 2, z)); // 柱
     }
   }
-
-  const light = scene.light2 ? F2.ceilingLight2(scene.light2) : F.ceilingLight(scene.light);
-  g.add(light);
-
+  shell.add(scene.light2 ? F2.ceilingLight2(scene.light2) : F.ceilingLight(scene.light));
   if (scene.attic) {
     // 屋根裏：両側から斜めに下がってくる屋根と、垂木・梁
     const roofM = scene.wall();
     const ang = Math.atan2(3.5, HALF_W), len = Math.hypot(HALF_W, 3.5);
     for (const s of [-1, 1]) {
-      const r = box(len, .12, SEG_LEN, roofM, s * HALF_W / 2, 4.5 + 1.75, 0); r.rotation.z = -s * ang; r.castShadow = false; g.add(r);
-      for (let z = -SEG_LEN / 2 + 1; z < SEG_LEN / 2; z += 3) { const b = box(len, .3, .3, M.woodDark, s * HALF_W / 2, 4.3 + 1.75, z); b.rotation.z = -s * ang; g.add(b); }
+      const r = box(len, .12, SEG_LEN, roofM, s * HALF_W / 2, 4.5 + 1.75, 0); r.rotation.z = -s * ang; r.castShadow = false; shell.add(r);
+      for (let z = -SEG_LEN / 2 + 1; z < SEG_LEN / 2; z += 3) { const b = box(len, .3, .3, M.woodDark, s * HALF_W / 2, 4.3 + 1.75, z); b.rotation.z = -s * ang; shell.add(b); }
     }
-    for (let z = -SEG_LEN / 2 + 1; z < SEG_LEN / 2; z += 6) g.add(box(HALF_W, .3, .3, M.woodDark, 0, 6.4, z));
+    for (let z = -SEG_LEN / 2 + 1; z < SEG_LEN / 2; z += 6) shell.add(box(HALF_W, .3, .3, M.woodDark, 0, 6.4, z));
+  }
+  mergeMeshes(shell);
+  yield;
+
+  // 壁ぎわの家具（1つずつ、細かい部品をまとめてから置く）
+  for (const s of [-1, 1]) {
+    let z = SEG_LEN / 2 - (isStart ? .8 : .1);
+    for (let n = 0; n < 8; n++) {
+      const item = wallItemFrom(pick(scene.wallItems));
+      const zc = z - rand(.3, 2.2) - item.len / 2;
+      if (zc - item.len / 2 < -SEG_LEN / 2 + .1) break;
+      if (item.obj.userData.anim) g.userData.anims.push(item.obj.userData.anim);
+      item.obj.position.set(s * HALF_W, 0, zc);
+      g.userData.wallItems.push({ obj: item.obj, side: s, z0: zc - item.len / 2, z1: zc + item.len / 2 });
+      if (s > 0) item.obj.rotation.y = Math.PI;
+      g.add(item.obj);
+      z = zc - item.len / 2;
+      yield;
+    }
   }
 
   let partition = null;
   if (isStart && prevScene) {
+    yield;
     partition = buildPartition(prevScene, scene, fx, flapW);
     partition.flapW = flapW;
+    partition.pivot.userData.noMerge = true; // 揺れるフラップはまとめない
+    mergeMeshes(partition.group);            // 本棚の本などの部品をまとめる（透かす材質は共通なのでそのまま）
     g.add(partition.group);
   }
   return { group: g, partition };
+}
+// 一度に全部組み立てる（スタート前の準備など）
+export function buildRoom(info, fx, flapW = FLAP_W) {
+  const it = buildRoomSteps(info, fx, flapW);
+  let r;
+  while (!(r = it.next()).done);
+  return r.value;
 }

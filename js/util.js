@@ -1,8 +1,9 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 // ---------- 共通の定数 ----------
 export const SEG_LEN = 24;   // 部屋1つ分の奥行き(m)
-export const SEG_COUNT = 9;  // 同時に存在する部屋の数
+export const SEG_COUNT = 7;  // 同時に存在する部屋の数（先の部屋は猫用扉の壁で見えないので少なめ）
 export const HALF_W = 6.5;   // 部屋の半幅（壁ぎわ家具の分を含む）
 export const PLAY_X = 4.2;   // ネコと障害物が動ける範囲の半幅
 export const WALL_H = 8;     // 天井の高さ（約2.4m）
@@ -91,5 +92,50 @@ export const pick = (arr) => arr[Math.random() * arr.length | 0];
 
 // ジオメトリを解放（マテリアルはキャッシュ共有なので残す）
 export function disposeTree(obj) {
-  obj.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+  obj.traverse(o => { if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose(); });
+}
+// 見本として取っておく物の形に「共有中」の印を付ける（コピーを片づけても見本の形は消さない）
+export function markShared(obj) {
+  obj.traverse(o => { if (o.geometry) o.geometry.userData.shared = true; });
+  return obj;
+}
+
+// ---------- 細かい部品をまとめて、描画の回数を減らす ----------
+// root の中の Mesh を「材質＋影を落とすか」ごとに1つの形にまとめる。
+// userData.noMerge が付いた物（動く物・透けさせる壁など）とその中身はまとめない。
+const _inv = new THREE.Matrix4(), _m = new THREE.Matrix4();
+export function mergeMeshes(root) {
+  root.updateMatrixWorld(true);
+  _inv.copy(root.matrixWorld).invert();
+  const buckets = new Map();
+  (function walk(o) {
+    for (const c of o.children) {
+      if (c.userData.noMerge) continue;
+      if (c.isMesh && !Array.isArray(c.material) && c.visible && c.geometry.index) {
+        const key = c.material.uuid + (c.castShadow ? '|s' : '');
+        if (!buckets.has(key)) buckets.set(key, []);
+        buckets.get(key).push(c);
+      }
+      walk(c);
+    }
+  })(root);
+  for (const list of buckets.values()) {
+    if (list.length < 2) continue;
+    const geos = list.map(m => {
+      const g = new THREE.BufferGeometry();
+      for (const name of ['position', 'normal', 'uv']) if (m.geometry.attributes[name]) g.setAttribute(name, m.geometry.attributes[name].clone());
+      g.setIndex(m.geometry.index.clone());
+      g.applyMatrix4(_m.multiplyMatrices(_inv, m.matrixWorld));
+      return g;
+    });
+    const merged = geos.every(g => g.attributes.uv) || geos.every(g => !g.attributes.uv) ? mergeGeometries(geos) : null;
+    geos.forEach(g => g.dispose());
+    if (!merged) continue;
+    const mesh = new THREE.Mesh(merged, list[0].material);
+    mesh.castShadow = list[0].castShadow;
+    mesh.receiveShadow = true;
+    root.add(mesh);
+    for (const m of list) { m.parent.remove(m); m.geometry.dispose(); }
+  }
+  return root;
 }

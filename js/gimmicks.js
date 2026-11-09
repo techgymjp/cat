@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { M, mat, box, cyl, sphere, group, rand, pick, PLAY_X } from './util.js';
-import { createCat, KIJITORA } from './cat.js';
+import { cloneCat, KIJITORA } from './cat.js';
 
 // 部屋ごとの仕掛け。
 // kind: 'hazard' … 触れたらアウト（上をジャンプで越えるのはOK）
@@ -35,7 +35,7 @@ export function vacuumChaser() {
 // ---------- 茶の間：座布団で寝ている先輩ネコ（キジトラ） ----------
 export function sleepingCat() {
   const g = group(box(2.1, .22, 2.1, mat(pick([0x6a3b5a, 0x7a4a2a, 0x2f4d6b]), { roughness: 1 }), 0, .11, 0));
-  const senior = createCat(KIJITORA);
+  const senior = cloneCat(KIJITORA);
   const S = 1.25; // プレイヤーより大きい先輩
   senior.cat.scale.setScalar(S);
   senior.cat.rotation.y = Math.PI; // 顔をこちらに向ける
