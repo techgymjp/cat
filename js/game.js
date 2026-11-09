@@ -111,7 +111,7 @@ function spawnContent(info, zCenter, difficulty, roomGroup) {
   if (roomIndex === 0) return; // 最初の部屋は安全
   const sc = info.scene;
   const top = zCenter + SEG_LEN / 2 - (info.isStart ? 11 : 1); // 猫用扉をくぐった直後は何も置かない
-  const bottom = zCenter - SEG_LEN / 2 + (info.isEnd ? 9 : 1); // 猫用扉の手前は空けておく
+  const bottom = zCenter - SEG_LEN / 2 + (info.isEnd ? 16 : 1); // 猫用扉の手前は空けておく（高い家具から降りて、扉にねらいを合わせる余裕）
   const rows = 2 + Math.min(2, difficulty * 0.5 | 0);
   const slot = (top - bottom) / rows;
   let barrierRow = -1;
@@ -707,8 +707,10 @@ function update(dt) {
   sun.target.position.set(state.x, 0, state.z - 4);
 }
 
+let simMode = false; // テスト用：true のあいだは画面を更新しない（シミュレーションで時間を自分で進める）
 function animate() {
   requestAnimationFrame(animate);
+  if (simMode) { clock.getDelta(); return; }
   update(Math.min(clock.getDelta(), 1 / 30));
   renderer.render(scene, camera);
 }
@@ -768,4 +770,9 @@ animate();
 warmUp();
 
 // テスト用フック
-window.__catball = { state, startGame, obstacles: () => obstacles, rooms: () => rooms, fresh: () => worldFresh };
+window.__catball = {
+  state, input, startGame, obstacles: () => obstacles, rooms: () => rooms, fresh: () => worldFresh,
+  // シミュレーション用：描画を止めて、dt 秒ずつゲームを進める
+  sim(on) { simMode = on; },
+  step(dt) { update(dt); },
+};
