@@ -5,7 +5,7 @@ const DICT = {
   ja: {
     pageTitle: '猫ボール',
     title: '猫ボール',
-    intro: 'まるくなったネコが、玄関から家の奥へどこまでもころがっていく！',
+    intro: 'ころがるネコで、家の奥までどこまで行ける？',
     rules: '<span class="spark">✨キラキラ✨</span>している物はぶっ壊してOK！続けて壊すとコンボで点数アップ！<br>それ以外の家具・動物・壁にぶつかったら一発アウト！<br>タップでジャンプ。テーブルやイスの上は歩けるよ。<br>部屋のさかいめは猫用扉にねらいを定めて、ボールのままくぐろう！',
     keys: '<span class="k-pc">← → / A D で左右　クリック / スペースでジャンプ</span><span class="k-touch">左右にドラッグで移動　タップでジャンプ</span>',
     loading: 'じゅんび中…',
@@ -48,7 +48,7 @@ const DICT = {
   en: {
     pageTitle: 'Neko Ball',
     title: 'Neko Ball',
-    intro: 'A cat curled up into a ball rolls from the front door deeper and deeper into the house!',
+    intro: 'How far into the house can a rolling cat get?',
     rules: 'Things that <span class="spark">✨sparkle✨</span> are fair game — smash them! Smash several in a row for a combo bonus!<br>Bump into any other furniture, animal or wall and you’re out!<br>Tap to jump. You can walk on tables and chairs.<br>At the end of each room, line up with the cat flap and roll through it as a ball!',
     keys: '<span class="k-pc">← → / A D to move　Click / Space to jump</span><span class="k-touch">Drag left or right to move　Tap to jump</span>',
     loading: 'Loading…',
