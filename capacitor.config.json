@@ -1,0 +1,8 @@
+{
+  "appId": "jp.techgym.cat",
+  "appName": "猫ボール",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#1b1410"
+  }
+}

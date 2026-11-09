@@ -1,2 +1,6 @@
 # シミュレーションの出力
 sim_result.json
+# Capacitor
+node_modules/
+www/
+.DS_Store

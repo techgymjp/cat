@@ -29,6 +29,25 @@
 
 到達した部屋（何部屋目・何周目）も記録され、タイトル画面に「最高到達」として表示される。
 
+## Android アプリ
+Capacitor 8 でアプリ化している（パッケージ名 `jp.techgym.cat`）。ゲームのファイルはアプリに同梱し、オフラインで遊べる。
+
+- 動作確認用 APK（テスト広告・デバッグ署名）：既定ブランチに push すると GitHub Actions がビルドし、Release `android-latest` に載せる
+  - リリース画面：https://github.com/techgymjp/cat/releases/tag/android-latest
+  - APK を直接：https://github.com/techgymjp/cat/releases/latest/download/neko-ball.apk
+  - スマホで読み取る QR コード：`docs/apk-qr.png`
+
+  ![APK の QR コード](docs/apk-qr.png)
+
+- Google Play 用の署名付き AAB：GitHub Secrets（`ANDROID_KEYSTORE_BASE64` など4つ）があると、Actions の Artifact に `neko-ball-release-aab` ができる（本番広告）
+- アプリだけの機能：戻るボタン（プレイ中はポーズ、タイトル・結果画面では終了）、別アプリに切り替えたら自動ポーズ、Android の共有メニュー、
+  タイトル画面のビルド番号・プライバシーポリシー・広告の設定（EU など）
+- 広告（`js/ads.js`）：バナーはタイトル・あそびかた・ポーズ・結果画面だけ。全画面広告はプレイ開始・もう一回・タイトルへ戻る・ポーズからの再開のたび。
+  リワード広告は、ぶつかったあとに「広告を見て続ける」（その場から復活、1ゲーム3回まで。結果画面とシェア文に「復活 N 回」）
+- 本番の広告ユニット ID と AdMob のアプリ ID は、AdMob で作ったら `js/ads.js` と `android/app/src/main/res/values/strings.xml` に入れる
+- ローカルでビルドするとき：`npm ci` → `npm run android:sync` → `npm run android:open`（Android Studio）
+- アイコン・起動画面：`node tools/make-icons.js`（`assets/` を作る）→ `npx @capacitor/assets generate --android`
+
 ## 起動
 ES モジュールを使うので、ローカルサーバー経由で開く（Three.js は CDN から読み込み）。
 ```
@@ -43,6 +62,11 @@ node tools/simulate.js 25 240   # 1レベル25回、1回最大240秒
 ```
 Playwright（npm の playwright と Chromium）が必要。
 
+## ライセンス
+著作権はテックジム株式会社に帰属します（All rights reserved）。許可なく複製・改変・再配布すること、Web サイトやアプリとして公開・販売すること、
+名前・アイコン・画像を使うことはできません。テックジムの受講生が学習目的で複製・改変することは許可します（アプリストアでの公開や広告・販売などの商用利用は不可）。
+同梱の three.js は MIT ライセンスです。くわしくは `LICENSE` を見てください。
+
 ## ファイル構成
 - `index.html` … 画面（タイトル・HUD）
 - `js/game.js` … ゲーム進行・操作・当たり判定
@@ -56,3 +80,7 @@ Playwright（npm の playwright と Chromium）が必要。
 - `js/i18n.js` … 日本語・英語の文言
 - `howto.html` / `howto-en.html` … 遊び方ページ（日本語・英語）
 - `tools/simulate.js` … 腕前別シミュレーション
+- `js/ads.js` … AdMob 広告（アプリのときだけ動く）／`js/ads-config.js`・`js/build-info.js` … ビルド時に上書きされる設定
+- `vendor/three/` … three.js（アプリに同梱するためリポジトリに入れている）
+- `android/` … Android プロジェクト（Capacitor）、`capacitor.config.json`、`scripts/build-web.js`（`www/` を作る）
+- `assets/` … アイコン・起動画面の元画像、`tools/make-icons.js` … それを作るスクリプト

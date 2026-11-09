@@ -281,13 +281,15 @@ function popup(text, pos) {
 function startGame() {
   if (!ready) return;
   prepareSounds();
-  Object.assign(state, { running: true, x: 0, y: 0, z: 0, vy: 0, vx: 0, speed: 12, distance: 0, smash: 0, smashPts: 0, combo: 0, comboTimer: 0, maxCombo: 0, room: 1, invincible: 0, grounded: true, onFloor: true, roll: 0, slip: 0 });
+  Object.assign(state, { running: true, x: 0, y: 0, z: 0, vy: 0, vx: 0, speed: 12, distance: 0, smash: 0, smashPts: 0, combo: 0, comboTimer: 0, maxCombo: 0, room: 1, invincible: 0, grounded: true, onFloor: true, roll: 0, slip: 0, paused: false, revives: 0 });
   if (!worldFresh) resetWorld(); // ふつうはゲームオーバー画面のあいだに作り直し済み
   worldFresh = false;
   clock.getDelta();
   $('title').classList.add('hidden');
   $('hud').classList.remove('hidden'); // タイトル画面では上の表示を隠しておく
   $('over').classList.add('hidden');
+  $('pause').classList.add('hidden');
+  closeHowto(true);
   updateHud();
   showBanner(sceneName('genkan'));
   try { startBgm(audio()); } catch {}
@@ -302,11 +304,11 @@ function gameOver() {
   $('result').innerHTML = t().result(here, t().cause[state.cause] || t().cause.bump, Math.floor(state.distance), state.smash, sc);
   const newReach = state.room > bestReach;
   if (newReach) { bestReach = state.room; lsSet('catball-reach', bestReach); }
-  $('reach').innerHTML = t().reached(roomText(state.room)) + (newReach && state.room > 1 ? '　' + t().newRecord : '') + '<br>' + t().maxCombo(state.maxCombo);
+  $('reach').innerHTML = t().reached(roomText(state.room)) + (newReach && state.room > 1 ? '　' + t().newRecord : '') + '<br>' + t().maxCombo(state.maxCombo) + (state.revives ? '　' + t().revived(state.revives) : '');
   $('best').textContent = t().best(best) + '　/　' + t().farthest(roomText(bestReach));
   state.combo = 0; state.comboTimer = 0;
   showFarthest();
-  setupShare(sceneName(roomAt(state.room).id), state.room, sc, state.maxCombo);
+  setupShare(sceneName(roomAt(state.room).id), state.room, sc, state.maxCombo, state.revives);
   $('over').classList.remove('hidden');
   sfx(400, .15); sfx(300, .2, .15); sfx(200, .35, .35);
   // 次のプレイ用の家を、ゲームオーバー画面のあいだに作り直しておく（スタート時の引っかかり防止）
@@ -320,17 +322,22 @@ function gameOver() {
 
 // ---------- 結果のシェア ----------
 const SHARE_URL = 'https://techgym.jp/column/claude-code-game-cat/';
-function setupShare(place, n, sc, combo) {
-  const text = t().shareText(place, n, sc, combo);
+function setupShare(place, n, sc, combo, revives = 0) {
+  const text = t().shareText(place, n, sc, combo, revives);
   const tags = t().hashtags;
   const enc = encodeURIComponent;
   $('shareX').href = `https://twitter.com/intent/tweet?text=${enc(text)}&url=${enc(SHARE_URL)}&hashtags=${enc(tags)}`;
   $('shareLine').href = `https://social-plugins.line.me/lineit/share?url=${enc(SHARE_URL)}&text=${enc(text)}`;
   $('shareFb').href = `https://www.facebook.com/sharer/sharer.php?u=${enc(SHARE_URL)}`;
   const nativeBtn = $('shareNative');
-  // スマホなど端末の共有メニューが使えるときだけ「結果をシェア」を出す
-  nativeBtn.hidden = !navigator.share;
-  nativeBtn.onclick = () => { navigator.share({ title: t().title, text: `${text} #${tags}`, url: SHARE_URL }).catch(() => {}); };
+  // アプリでは Android の共有メニュー（@capacitor/share）、Web ではブラウザの共有メニューが使えるときだけ出す
+  const nativeShare = plugin('Share');
+  nativeBtn.hidden = !nativeShare && !navigator.share;
+  nativeBtn.onclick = () => {
+    const data = { title: t().title, text: `${text} #${tags}`, url: SHARE_URL };
+    if (nativeShare) nativeShare.share({ ...data, dialogTitle: t().shareDialog }).catch(() => {});
+    else navigator.share(data).catch(() => {});
+  };
   const copyBtn = $('shareCopy');
   copyBtn.textContent = t().copyLink;
   copyBtn.onclick = async () => {
@@ -452,7 +459,8 @@ addEventListener('keydown', (e) => {
   if (['ArrowLeft', 'a', 'A'].includes(e.key)) input.left = true;
   if (['ArrowRight', 'd', 'D'].includes(e.key)) input.right = true;
   if ([' ', 'ArrowUp', 'w', 'W'].includes(e.key)) { input.jumpQueued = true; e.preventDefault(); }
-  if (e.key === 'Enter' && ready && !state.running && !state.crashed) startGame();
+  if (e.key === 'Enter' && ready && !state.running && !state.crashed && !$('title').classList.contains('hidden')) withInterstitial(startGame);
+  if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') togglePause();
 });
 addEventListener('keyup', (e) => {
   if (['ArrowLeft', 'a', 'A'].includes(e.key)) input.left = false;
@@ -471,7 +479,7 @@ renderer.domElement.addEventListener('pointerup', () => {
   ptr = null; input.dragX = null;
 });
 renderer.domElement.addEventListener('pointercancel', () => { ptr = null; input.dragX = null; });
-$('startBtn').onclick = startGame;
+$('startBtn').onclick = () => { if (ready) withInterstitial(startGame); }; // プレイを始めるたびに全画面広告（アプリのみ）
 // 言語の切り替え
 const langBtn = $('langBtn');
 const refreshLang = () => {
@@ -485,7 +493,7 @@ const muteBtn = $('mute');
 const showMute = () => { muteBtn.textContent = isMuted() ? '🔇' : '🔊'; };
 showMute();
 muteBtn.onclick = (e) => { e.stopPropagation(); toggleMute(); showMute(); };
-$('retryBtn').onclick = startGame;
+$('retryBtn').onclick = () => withInterstitial(startGame);
 
 // ---------- 当たり判定 ----------
 function hitsBox(o, r) {
@@ -548,7 +556,7 @@ function updateDebris(dt) {
 
 // ライフは1つ：ぶつかったら一発アウト
 function hurt(cause) {
-  if (!state.running || window.__catball?.god) return; // god はテスト用
+  if (!state.running || window.__catball?.god || state.invincible > 0) return; // god はテスト用。復活直後は無敵
   state.cause = cause || 'bump';
   state.running = false;
   state.crashed = true;
@@ -557,7 +565,8 @@ function hurt(cause) {
   sfx(150, .3, 0, 'sawtooth', .14);
   noiseSfx(.25, 600, .3);
   updateHud();
-  setTimeout(gameOver, 900);
+  if (canRevive()) setTimeout(offerRevive, REVIVE_DELAY * 1000);
+  else setTimeout(gameOver, 900);
 }
 
 // ---------- メインループ ----------
@@ -568,7 +577,7 @@ function update(dt) {
   const part = nextPartition();
   const toDoor = part ? state.z - part.z : Infinity; // 猫用扉までの距離
 
-  if (state.running) {
+  if (state.running && !state.paused) {
     state.speed = Math.min(30, state.speed + (12 + state.distance / 45 - state.speed) * Math.min(1, dt * 1.5));
     const prevZ = state.z;
     state.z -= state.speed * dt;
@@ -783,6 +792,7 @@ function animate() {
   if (simMode) { clock.getDelta(); return; }
   update(Math.min(clock.getDelta(), 1 / 30));
   renderer.render(scene, camera);
+  updateAdBanner();
 }
 
 addEventListener('resize', () => {
@@ -790,6 +800,168 @@ addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
 });
+
+// ---------- アプリ（Android / iOS）用 ----------
+// Capacitor で動いているときだけネイティブの機能を使う。Web 版では Capacitor がないので何もしない
+const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+const plugin = (name) => (NATIVE && window.Capacitor.Plugins ? window.Capacitor.Plugins[name] : null);
+const Ads = window.Ads || { available: false, canReward: false, showing: false, initDone: Promise.resolve(), showInterstitial: async () => {}, showRewarded: async () => 'unavailable', setBanner() {}, showPrivacyOptions: async () => {}, privacyOptionsRequired: false };
+if (NATIVE) document.body.classList.add('app');
+// 広告を出すあいだは音を止める（ads.js から呼ばれる）
+window.GameSound = {
+  suspend() { try { if (actx) actx.suspend(); } catch {} },
+  resume() { try { if (actx && !state.paused && !document.hidden) actx.resume(); } catch {} },
+};
+const isShown = (id) => !$(id).classList.contains('hidden');
+
+// 全画面広告：「プレイを始める」「もう一回」「タイトルへ戻る」「ポーズからの再開」のたびに出す（アプリのみ）
+let adBusy = false;
+async function withInterstitial(next) {
+  if (adBusy) return;
+  if (Ads.available) {
+    adBusy = true;
+    await Ads.showInterstitial(3000);
+    adBusy = false;
+  }
+  next();
+}
+
+// ---------- ポーズ ----------
+function pauseGame() {
+  if (!state.running || state.paused) return;
+  state.paused = true;
+  input.dragX = null; input.left = input.right = false; input.jumpQueued = false;
+  $('pause').classList.remove('hidden');
+  window.GameSound.suspend();
+}
+function resumeGame() {
+  if (!state.paused) return;
+  state.paused = false;
+  $('pause').classList.add('hidden');
+  clock.getDelta();
+  window.GameSound.resume();
+}
+function togglePause() { if (state.paused) withInterstitial(resumeGame); else pauseGame(); }
+function goTitle() {
+  withInterstitial(() => {
+    closeRevive();
+    state.running = false; state.paused = false; state.crashed = false;
+    stopBgm();
+    window.GameSound.resume();
+    $('pause').classList.add('hidden');
+    $('over').classList.add('hidden');
+    $('hud').classList.add('hidden');
+    $('combo').classList.remove('show');
+    closeHowto(true);
+    $('title').classList.remove('hidden');
+    showFarthest();
+    if (!worldFresh) {
+      Object.assign(state, { x: 0, y: 0, z: 0, vy: 0, vx: 0, distance: 0, grounded: true, onFloor: true, slip: 0 });
+      resetWorld();
+      worldFresh = true;
+    }
+  });
+}
+$('pauseBtn').onclick = (e) => { e.stopPropagation(); togglePause(); };
+$('resumeBtn').onclick = () => withInterstitial(resumeGame);
+$('pauseTitleBtn').onclick = goTitle;
+$('toTitleBtn').onclick = goTitle;
+// 別のアプリに切り替えたら、自動でポーズして音を止める
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { pauseGame(); window.GameSound.suspend(); }
+  else if (!Ads.showing) window.GameSound.resume();
+});
+
+// ---------- あそびかた（ページを読み直さずに重ねて表示） ----------
+function openHowto() {
+  $('howtoFrame').src = `${t().howtoUrl}?embed=1`;
+  $('howtoPanel').classList.remove('hidden');
+}
+function closeHowto(silent) {
+  if (!isShown('howtoPanel')) return;
+  if (silent) { $('howtoPanel').classList.add('hidden'); return; }
+  // 「トップ画面に戻る（あそびかたから）」のたびに全画面広告
+  withInterstitial(() => $('howtoPanel').classList.add('hidden'));
+}
+document.querySelectorAll('a.howto').forEach(a => a.addEventListener('click', (e) => { e.preventDefault(); openHowto(); }));
+$('howtoClose').onclick = () => closeHowto(false);
+$('howtoPlay').onclick = () => withInterstitial(startGame); // 「プレイを始める（あそびかたから）」
+
+// ---------- Android の戻るボタン ----------
+// プレイ中はポーズ（ポーズ中なら再開）、あそびかたなら閉じる、タイトル・結果画面ではアプリを終了
+if (plugin('App')) {
+  plugin('App').addListener('backButton', () => {
+    if (isShown('howtoPanel')) closeHowto(false);
+    else if (isShown('title') || isShown('over')) plugin('App').exitApp();
+    else if (state.paused) withInterstitial(resumeGame);
+    else if (state.running) pauseGame();
+  });
+}
+
+// ---------- リワード広告：ぶつかったあと、広告を見てその場から続ける（アプリのみ・1ゲーム3回まで） ----------
+// ぶつかった様子を見届けられるよう少し待ってから案内を出し、数秒で自動的に閉じて結果画面へ進む
+const REVIVE_DELAY = 2.5, REVIVE_WAIT = 6, REVIVE_MAX = 3;
+const rv = { active: false, busy: false, timer: 0 };
+function canRevive() { return Ads.canReward && (state.revives || 0) < REVIVE_MAX && !simMode; } // シミュレーション中は出さない
+function offerRevive() {
+  if (state.running) return;
+  Object.assign(rv, { active: true, busy: false });
+  $('reviveWatch').disabled = false;
+  $('reviveWatch').textContent = t().reviveWatch;
+  $('reviveMsg').textContent = t().reviveMsg;
+  $('reviveNote').textContent = t().reviveNote(REVIVE_MAX - (state.revives || 0));
+  let left = REVIVE_WAIT;
+  $('reviveSkip').textContent = t().reviveSkip(left);
+  $('revive').classList.remove('hidden');
+  clearInterval(rv.timer);
+  rv.timer = setInterval(() => {
+    if (rv.busy) return;
+    left--;
+    $('reviveSkip').textContent = t().reviveSkip(Math.max(0, left));
+    if (left <= 0) skipRevive();
+  }, 1000);
+}
+function closeRevive() { rv.active = false; clearInterval(rv.timer); $('revive').classList.add('hidden'); }
+function skipRevive() { if (!rv.active) return; closeRevive(); gameOver(); }
+$('reviveSkip').onclick = skipRevive;
+$('reviveWatch').onclick = async () => {
+  if (!rv.active || rv.busy) return;
+  rv.busy = true;
+  $('reviveWatch').disabled = true;
+  $('reviveWatch').textContent = t().reviveLoading;
+  const result = await Ads.showRewarded();
+  if (!rv.active) return;
+  if (result === 'unavailable') { $('reviveMsg').textContent = t().reviveFail; setTimeout(skipRevive, 1500); return; }
+  closeRevive();
+  if (result === 'rewarded') revive(); // 最後まで見たときだけ
+  else gameOver();
+};
+// その場から続ける：ぶつかった物を片づけ、少しのあいだ無敵にする
+function revive() {
+  state.revives = (state.revives || 0) + 1;
+  for (const o of obstacles) if (!o.dead && Math.abs(o.z - state.z) < o.d / 2 + 5) { o.dead = true; removeObstacle(o); }
+  obstacles = obstacles.filter(o => !o.dead);
+  if (state.cause === 'doorMiss' || state.cause === 'doorTop') {
+    // 猫用扉でぶつかったときは、扉の手前に戻して扉に合わせる
+    const part = nextPartition();
+    if (part) { part.checked = false; state.x = part.fx; state.z = part.z + 6; }
+  }
+  Object.assign(state, { running: true, crashed: false, y: 0, vy: 0, vx: 0, grounded: true, onFloor: true, slip: 0, invincible: 2, speed: Math.max(12, state.speed * .7) });
+  input.dragX = null; ptr = null;
+  clock.getDelta();
+  try { startBgm(audio()); } catch {}
+  updateHud();
+}
+
+// ---------- バナー広告：タイトル・あそびかた・ポーズ・結果画面だけ（プレイ中は出さない） ----------
+function updateAdBanner() {
+  Ads.setBanner(!rv.active && (isShown('title') || isShown('over') || isShown('pause') || isShown('howtoPanel')));
+}
+
+// タイトル画面の下に、バージョン（アプリ版）・プライバシーポリシー・広告の設定（EU など）を出す
+if (window.APP_VERSION && window.APP_VERSION !== 'dev') $('buildInfo').textContent = window.APP_VERSION;
+Ads.initDone.then(() => { if (Ads.privacyOptionsRequired) $('adPrivacy').hidden = false; });
+$('adPrivacy').addEventListener('click', (e) => { e.preventDefault(); Ads.showPrivacyOptions(); });
 
 // ---------- スタート前の準備 ----------
 // 全場面の部屋・家具・仕掛け・ネコ・目印を一度だけ裏で描き、シェーダーの準備と画像の転送を先に済ませる。

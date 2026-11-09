@@ -7,3 +7,5 @@
 ## プロジェクト
 - 「猫ボール」：Three.js で作る 3D 前進スクロールゲーム。構成は README.md を参照。
 - `main` に push すると GitHub Actions で GitHub Pages（https://techgymjp.github.io/cat/）に自動公開される。
+- Android アプリは Capacitor 8（パッケージ名 `jp.techgym.cat`）。構成は techgymjp/jet-fighter の `docs/ANDROID_PORTING.md` に合わせている。
+  クラウドの環境では Android SDK を入れられないので、APK / AAB のビルドは GitHub Actions（`.github/workflows/android.yml`）に任せる。

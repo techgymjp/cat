@@ -31,6 +31,15 @@ The room you reach (room number and lap) is recorded, and your farthest room is 
 
 The game picks Japanese or English from your browser language. Switch with the button on the title screen, or add `?lang=en` / `?lang=ja` to the URL.
 
+## Android app
+Built with Capacitor 8 (package name `jp.techgym.cat`). All game files are bundled, so it plays offline.
+- Test APK (test ads, debug signing): built by GitHub Actions on every push to the default branch and published to the `android-latest` release —
+  https://github.com/techgymjp/cat/releases/tag/android-latest (QR code: `docs/apk-qr.png`)
+- A signed AAB for Google Play is produced when the four `ANDROID_*` secrets are set.
+
+## License
+Copyright TECH GYM K.K. All rights reserved. See `LICENSE` (three.js is MIT-licensed).
+
 ## Running locally
 The game uses ES modules, so serve it over HTTP (Three.js loads from a CDN).
 ```

@@ -1,0 +1,29 @@
+<!doctype html>
+<!-- アプリのアイコンと起動画面の元画像を作るページ（tools/make-icons.js から開く） -->
+<html><head><meta charset="utf-8"></head><body style="margin:0;background:transparent">
+<script type="importmap">{ "imports": { "three": "../vendor/three/three.module.js", "three/addons/": "../vendor/three/addons/" } }</script>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { createCat } from '../js/cat.js';
+const q = new URLSearchParams(location.search);
+const scale = Number(q.get('s') || 1);       // 画面に対するネコの大きさ
+const W = innerWidth, H = innerHeight;
+const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+r.setSize(W, H); r.setPixelRatio(1); r.toneMapping = THREE.ACESFilmicToneMapping; r.setClearColor(0x000000, 0);
+document.body.appendChild(r.domElement);
+const s = new THREE.Scene();
+s.environment = new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(), .04).texture; s.environmentIntensity = .5;
+s.add(new THREE.HemisphereLight(0xfff4e0, 0x7a5c40, 1.1));
+const d = new THREE.DirectionalLight(0xffecd0, 1.8); d.position.set(-2, 5, -6); s.add(d);
+const cat = createCat();
+cat.ballForm.visible = true; cat.catForm.visible = false;
+cat.ballSpin.rotation.x = .35;           // 顔が少し見えるように
+cat.cat.rotation.y = Math.PI + .35;      // 顔をこちらへ
+s.add(cat.cat);
+const c = new THREE.PerspectiveCamera(30, W / H, .1, 50);
+c.position.set(0, .35, 3.2 / scale);
+c.lookAt(0, -.02, 0);
+r.render(s, c);
+document.title = 'done';
+</script></body></html>
