@@ -281,6 +281,7 @@ function gameOver() {
   $('best').textContent = t().best(best) + '　/　' + t().farthest(roomText(bestReach));
   state.combo = 0; state.comboTimer = 0;
   showFarthest();
+  setupShare(sceneName(roomAt(state.room).id), state.room, sc, state.maxCombo);
   $('over').classList.remove('hidden');
   sfx(400, .15); sfx(300, .2, .15); sfx(200, .35, .35);
   // 次のプレイ用の家を、ゲームオーバー画面のあいだに作り直しておく（スタート時の引っかかり防止）
@@ -290,6 +291,30 @@ function gameOver() {
     resetWorld();
     worldFresh = true;
   }, 700);
+}
+
+// ---------- 結果のシェア ----------
+const SHARE_URL = 'https://techgym.jp/column/claude-code-game-cat/';
+function setupShare(place, n, sc, combo) {
+  const text = t().shareText(place, n, sc, combo);
+  const tags = t().hashtags;
+  const enc = encodeURIComponent;
+  $('shareX').href = `https://twitter.com/intent/tweet?text=${enc(text)}&url=${enc(SHARE_URL)}&hashtags=${enc(tags)}`;
+  $('shareLine').href = `https://social-plugins.line.me/lineit/share?url=${enc(SHARE_URL)}&text=${enc(text)}`;
+  $('shareFb').href = `https://www.facebook.com/sharer/sharer.php?u=${enc(SHARE_URL)}`;
+  const nativeBtn = $('shareNative');
+  // スマホなど端末の共有メニューが使えるときだけ「結果をシェア」を出す
+  nativeBtn.hidden = !navigator.share;
+  nativeBtn.onclick = () => { navigator.share({ title: t().title, text: `${text} #${tags}`, url: SHARE_URL }).catch(() => {}); };
+  const copyBtn = $('shareCopy');
+  copyBtn.textContent = t().copyLink;
+  copyBtn.onclick = async () => {
+    const all = `${text} #${tags} ${SHARE_URL}`;
+    try { await navigator.clipboard.writeText(all); }
+    catch { const ta = document.createElement('textarea'); ta.value = all; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch {} ta.remove(); }
+    copyBtn.textContent = t().copied;
+    setTimeout(() => { copyBtn.textContent = t().copyLink; }, 1500);
+  };
 }
 
 function updateHud() {
