@@ -22,7 +22,7 @@ const CAP = {
     ['Jump up and', 'walk across the table'],
     ['Roll through the', 'cat flap to the next room'],
     ["Don't wake", 'the big sleeping cat…'],
-    ['20 rooms!', 'Reach the Aquarium Room'],
+    ['20 rooms!', 'Reach the aquarium!'],
   ],
 };
 
@@ -34,10 +34,12 @@ async function caption(p, lines) {
     d.innerHTML = lines.map((l, i) => `<div style="${i === 1 ? 'color:#ffcf6e' : ''}">${l}</div>`).join('');
     document.body.appendChild(d);
     const hud = document.getElementById('hud'); if (hud) hud.style.top = '112px';
+    const combo = document.getElementById('combo'); if (combo) combo.style.top = '170px';
+    const lb = document.getElementById('langBtn'); if (lb) lb.style.visibility = 'hidden';
   }, lines);
 }
 async function uncaption(p) {
-  await p.evaluate(() => { document.getElementById('__cap')?.remove(); const hud = document.getElementById('hud'); if (hud) hud.style.top = ''; });
+  await p.evaluate(() => { document.getElementById('__cap')?.remove(); const hud = document.getElementById('hud'); if (hud) hud.style.top = ''; const combo = document.getElementById('combo'); if (combo) combo.style.top = ''; });
 }
 
 // ゲームの時間を進めて、条件を満たしたら止める（描画は止めたまま）
@@ -50,7 +52,7 @@ async function runUntil(p, cond, opts = {}) {
       const part = c.rooms().map(r => r.partition).filter(q => q && !q.passed).sort((a, b) => b.z - a.z)[0];
       if (part && s.z - part.z < 14) s.x = part.fx; // 猫用扉は通す
       if (opts.jump && s.z - opts.jumpZ <= 0) { /* noop */ }
-      if (opts.fast) { s.z -= opts.fast; s.distance += opts.fast; }
+      if (opts.fast) s.z -= opts.fast;
       c.step(1 / 60);
     }
     return false;
@@ -110,7 +112,8 @@ async function hold(p) { await p.evaluate(() => window.__catball.sim(true)); }
     await show(p); await caption(p, CAP[lang][4]); await shot(5); await hold(p);
 
     // 6. アクアリウム室（20部屋目）まで早送り
-    await runUntil(p, "(() => { const cur = c.rooms().find(r => Math.abs(r.z - s.z) <= 12); return cur && cur.info.scene.id === 'aquarium' && cur.info.segIdx === 0 && s.z - cur.z < 2; })()", { fast: 1.5, max: 200000 });
+    await runUntil(p, "(() => { const cur = c.rooms().find(r => Math.abs(r.z - s.z) <= 12); return cur && cur.info.scene.id === 'aquarium' && cur.info.segIdx === 0 && s.z - cur.z < 9; })()", { fast: 1.5, max: 200000 });
+    await p.evaluate(() => { const c = window.__catball, s = c.state; s.x = 0; for (let i = 0; i < 40; i++) c.step(1 / 60); });
     await show(p, 900); await caption(p, CAP[lang][5]); await shot(6);
     await ctx.close();
   }
