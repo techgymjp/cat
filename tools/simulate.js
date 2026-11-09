@@ -35,7 +35,7 @@ async function playOnce(page, P, maxT) {
     const tReach = (h) => { const need = Math.max(.15, h - .9); const disc = 13.5 * 13.5 - 60 * need; return disc < 0 ? null : (13.5 - Math.sqrt(disc)) / 30; };
     // 高さ h の物を飛び越える（ボールの下側が上を通る）までの時間。少し余裕をみる
     const tOver = (h) => { const need = h + .2; const disc = 13.5 * 13.5 - 60 * need; return disc < 0 ? null : (13.5 - Math.sqrt(disc)) / 30 + .05; };
-    const widthOf = (o) => (o.gimmick === 'cat' && P.knowsCat) ? Math.max(o.w, 3.6) : o.w;
+    const widthOf = (o) => (o.gimmick === 'cat' && P.knowsCat) ? Math.max(o.w, 1.6) : o.w;
 
     let planT = 0, target = 0, jumpObj = null, jumpErr = 0;
     function plan() {

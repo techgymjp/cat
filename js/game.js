@@ -594,7 +594,7 @@ function update(dt) {
         continue;
       }
       if (o.kind === 'hazard') {
-        if (hitsBox(o, BALL_R * 0.85)) hurt(HAZARD_MSG[o.gimmick]);
+        if (hitsBox(o, BALL_R * (o.graze ?? 0.85))) hurt(HAZARD_MSG[o.gimmick]); // graze：かすったくらいはセーフにする倍率
         if (!state.running) break;
         continue;
       }

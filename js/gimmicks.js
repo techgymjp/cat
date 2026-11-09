@@ -45,14 +45,15 @@ export function sleepingCat() {
   senior.ballSpin.rotation.x = .25; // 少し顔を上げて寝ている
   g.add(senior.cat);
   return {
-    mesh: g, w: 2.0, h: 1.5, d: 2.0, kind: 'hazard', gimmick: 'cat',
+    // 当たり判定は体の芯だけ（座布団や毛先をかすったくらいはセーフ）。graze はネコ側の当たり半径の倍率
+    mesh: g, w: 1.4, h: 1.3, d: 1.4, kind: 'hazard', gimmick: 'cat', graze: .5,
     tick(o, dt, { state, sfx }) {
       const t = performance.now() / 1000;
       if (!o.awake) {
         senior.ballForm.scale.set(1, 1 + Math.sin(t * 2) * .025, 1); // すやすや
         const dz = state.z - o.z;
         if (state.running && dz > 0 && dz < 7 && state.y < .5 && Math.abs(state.x - o.x) < 3.5) { // ボールの音で起きる
-          o.awake = true; o.w = 3.6; o.h = 2.4; sfx.hiss();
+          o.awake = true; o.w = 1.6; o.d = 2.2; o.h = 2.2; sfx.hiss(); // 起きて大きくなっても、判定は見た目より小さめ
           senior.ballForm.visible = false;
           senior.catForm.visible = true;
           senior.catForm.userData.mouth.visible = true;
