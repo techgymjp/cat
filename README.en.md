@@ -5,7 +5,7 @@
 A 3D forward-scrolling game (Three.js) where a cat curled up into a ball rolls endlessly through a house.
 
 ## How to play
-- The rooms change as you go: Entrance Hall → Hallway → Living Room (Japanese) → Veranda → Tatami Room → Bedroom → Kids’ Room → Study → Secret Hobby Room → Kitchen → Home Bar → Karaoke Room → Billiard Room → Table Tennis Room → Brick Fireplace Room → Drawing Room → Music Room → Indoor Garden → Attic, then back to the Hallway.
+- The rooms change as you go: Entrance Hall → Hallway → Living Room (Japanese) → Veranda → Tatami Room → Bedroom → Kids’ Room → Study → Secret Hobby Room → Kitchen → Home Bar → Karaoke Room → Billiard Room → Table Tennis Room → Brick Fireplace Room → Drawing Room → Music Room → Indoor Garden → Attic → Aquarium Room (room 20), then lap 2 starts from the Hallway.
 - Each room ends with a wall and a **cat flap**. Steer to line up with it and roll through as a ball. Miss it, or hit it while jumping, and you bonk the wall.
 - On the floor the cat is a ball. You have one life: bump into anything solid and the game is over.
 - Tap / click / Space to jump. The cat stretches out and turns back into a cat.

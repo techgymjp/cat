@@ -228,8 +228,19 @@ SCENES.push(
     smalls: [F2.lantern, F.vase],
   },
 );
+SCENES.push({
+  id: 'aquarium', name: 'アクアリウム室', segs: 2,
+  floor: once('aquaFloor', () => T.makeMat(T.darkTile(), { roughness: .15, metalness: .2 })),
+  wall: once('aquaWall', () => T.makeMat(T.plaster('#12243a', .05), { roughness: .9 })), ceil: ceilDark, base: M.black,
+  light2: 'aquaGlow',
+  wallItems: [F2.wallTank, F2.wallTank, F2.bubbleTubeWall],
+  obstacles: [F2.bubbleTube, F2.smallTank, F2.coral, F.goldfishBowl, F2.fishFood],
+  platforms: [F2.aquariumTank], platformRate: .5,
+  barriers: [F2.tankAcross], barrierRate: .5,
+  smalls: [F.goldfishBowl, F2.smallTank, F2.fishFood, F2.coral],
+});
 // 場面の順番（1周したら玄関はとばして廊下から）
-const ORDER = ['genkan', 'rouka', 'chanoma', 'engawa', 'washitsu', 'yoshitsu', 'kids', 'study', 'hobby', 'kitchen', 'bar', 'karaoke', 'billiard', 'pingpong', 'brick', 'oosetsu', 'music', 'sunroom', 'attic'];
+const ORDER = ['genkan', 'rouka', 'chanoma', 'engawa', 'washitsu', 'yoshitsu', 'kids', 'study', 'hobby', 'kitchen', 'bar', 'karaoke', 'billiard', 'pingpong', 'brick', 'oosetsu', 'music', 'sunroom', 'attic', 'aquarium'];
 SCENES.sort((a, b) => ORDER.indexOf(a.id) - ORDER.indexOf(b.id));
 
 // roomIndex 番目の部屋がどの場面の何番目か。1周したら玄関はとばして廊下から。
@@ -341,6 +352,7 @@ export function buildRoom(info, fx, flapW = FLAP_W) {
   const { scene, segIdx, isStart, prevScene } = info;
   const g = new THREE.Group();
   g.userData.wallItems = [];
+  g.userData.anims = []; // 壁ぎわの水槽の魚など、動くもの
 
   const floor = plane(HALF_W * 2, SEG_LEN, scene.floor(segIdx));
   floor.rotation.x = -Math.PI / 2; g.add(floor);
@@ -370,6 +382,7 @@ export function buildRoom(info, fx, flapW = FLAP_W) {
       if (zc - item.len / 2 < -SEG_LEN / 2 + .1) break;
       item.obj.position.set(s * HALF_W, 0, zc);
       g.userData.wallItems.push({ obj: item.obj, side: s, z0: zc - item.len / 2, z1: zc + item.len / 2 });
+      if (item.obj.userData.anim) g.userData.anims.push(item.obj.userData.anim);
       if (s > 0) item.obj.rotation.y = Math.PI;
       g.add(item.obj);
       z = zc - item.len / 2;

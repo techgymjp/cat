@@ -471,9 +471,106 @@ export function ceilingLight2(type) {
   } else if (type === 'skylight') {
     g.add(box(4.5, .1, 8, new THREE.MeshBasicMaterial({ color: 0xeaf6ff }), 0, WALL_H - .05, 0));
     for (let z = -4; z <= 4; z += 2) g.add(box(4.6, .14, .12, M.white, 0, WALL_H - .1, z));
+  } else if (type === 'aquaGlow') {
+    // 水の中のような青い光
+    g.add(box(3, .1, 8, new THREE.MeshBasicMaterial({ color: 0x5fc8ff }), 0, WALL_H - .05, 0));
+    for (const x of [-4.5, 4.5]) g.add(box(.3, .1, 10, glow(0x2f8fd0), x, WALL_H - .1, 0));
   } else if (type === 'track') {
     g.add(box(.2, .15, 8, M.black, 0, WALL_H - .08, 0));
     for (let z = -3.5; z <= 3.5; z += 1.75) { const s = cyl(.12, .2, .45, M.black, 0, WALL_H - .4, z, 10); s.rotation.x = .4; g.add(s, sphere(.1, M.lampOn, 0, WALL_H - .62, z + .1)); }
   }
   return g;
+}
+
+// ============ アクアリウム室 ============
+const FISH_COLS = [0xff7a1a, 0xffd23a, 0x3fb6ff, 0xff4f7a, 0xffffff, 0x7ad95f, 0xb07aff];
+function fishMesh(scale = 1) {
+  const c = pick(FISH_COLS);
+  const m = new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: .25, roughness: .4 });
+  const f = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.SphereGeometry(.16 * scale, 10, 8), m); body.scale.set(.55, .8, 1.5); f.add(body);
+  const tail = new THREE.Mesh(new THREE.ConeGeometry(.12 * scale, .2 * scale, 4), m); tail.rotation.x = -Math.PI / 2; tail.position.z = .28 * scale; tail.scale.x = .3; f.add(tail);
+  return f;
+}
+const waterM = () => new THREE.MeshStandardMaterial({ color: 0x2f8fd0, emissive: 0x1a5f9a, emissiveIntensity: .9, transparent: true, opacity: .45, roughness: .05 });
+// 水槽の中身（砂・水草・岩・泳ぐ魚）。泳がせる関数を返す
+function fillTank(g, w, h, d, x0 = 0, y0 = 0, fishN = 6) {
+  g.add(box(w - .1, .15, d - .1, mat(0xe8d9a8), x0, y0 + .08, 0));
+  for (let i = 0; i < Math.floor(d * 1.5); i++) { const p = cyl(.02, .05, rand(.5, h * .8), mat(0x3fa04a), x0 + rand(-w / 2 + .2, w / 2 - .2), y0 + .4, rand(-d / 2 + .2, d / 2 - .2), 5); p.scale.y = rand(.8, 1.4); g.add(p); }
+  for (let i = 0; i < 3; i++) g.add(sphere(rand(.15, .3), mat(0x6b6b6b, { roughness: 1 }), x0 + rand(-w / 3, w / 3), y0 + .2, rand(-d / 3, d / 3)));
+  const fish = [];
+  for (let i = 0; i < fishN; i++) {
+    const f = fishMesh(rand(.8, 1.3));
+    f.userData = { ph: rand(0, 6), sp: rand(.4, 1), y: y0 + rand(.4, h - .4), x: x0 + rand(-w / 3, w / 3) };
+    g.add(f); fish.push(f);
+  }
+  g.add(box(w, h, d, waterM(), x0, y0 + h / 2, 0));
+  return (t) => {
+    for (const f of fish) {
+      const u = f.userData, s = Math.sin(t * u.sp + u.ph);
+      f.position.set(u.x + Math.sin(t * u.sp * 1.7 + u.ph) * .15, u.y + Math.sin(t * 1.3 + u.ph) * .1, s * (d / 2 - .4));
+      f.rotation.y = Math.cos(t * u.sp + u.ph) > 0 ? Math.PI : 0;
+    }
+  };
+}
+
+// 壁ぎわの大水槽（魚が泳ぐ）
+export function wallTank() {
+  const L = 6, D = 1.8, H = 3.6, y0 = 1.4;
+  const frame = mat(0x1a2230, { roughness: .3 });
+  const g = group(box(D, y0, L, frame, D / 2, y0 / 2, 0), box(D + .1, .25, L + .1, frame, D / 2, y0 + H + .12, 0));
+  const tank = new THREE.Group(); tank.position.set(D / 2, 0, 0); g.add(tank);
+  const swim = fillTank(tank, D - .1, H, L - .1, 0, y0, 10);
+  g.add(box(.1, .1, L, glow(0x9fe0ff), D / 2, y0 + H - .1, 0));
+  g.userData.anim = swim;
+  return { obj: g, len: L + .5 };
+}
+// 泡が立ちのぼる光る柱
+export function bubbleTube() {
+  const g = group(cyl(.5, .55, .4, mat(0x1a2230), 0, .2, 0, 16), cyl(.42, .42, 4.6, new THREE.MeshStandardMaterial({ color: 0x3fb6ff, emissive: 0x2f8fd0, emissiveIntensity: 1.1, transparent: true, opacity: .55 }), 0, 2.7, 0, 16), cyl(.5, .5, .2, mat(0x1a2230), 0, 5.1, 0, 16));
+  const bubbles = [];
+  for (let i = 0; i < 8; i++) { const b = sphere(rand(.05, .12), mat(0xffffff, { transparent: true, opacity: .7 }), rand(-.2, .2), rand(.5, 5), rand(-.2, .2)); g.add(b); bubbles.push(b); }
+  return {
+    mesh: g, w: 1.1, h: 5.2, d: 1.1,
+    tick(o, dt) { for (const b of bubbles) { b.position.y += dt * 1.5; if (b.position.y > 4.9) b.position.y = .5; } },
+  };
+}
+export function bubbleTubeWall() {
+  const o = bubbleTube();
+  const g = group(o.mesh); o.mesh.position.x = .7;
+  return { obj: g, len: 1.6 };
+}
+// 水槽台の上の水槽（ガラスのふたの上を歩ける）
+export function aquariumTank(maxD) {
+  const d = Math.min(maxD, 5), w = 2.4, stand = 1.3, th = 1.3, h = stand + th + .08;
+  const frame = mat(0x1a2230, { roughness: .3 });
+  const g = group(box(w, stand, d, frame, 0, stand / 2, 0), box(w + .05, .08, d + .05, mat(0xcfe8f0, { transparent: true, opacity: .5, roughness: .05 }), 0, h - .04, 0));
+  const swim = fillTank(g, w - .1, th, d - .1, 0, stand, 6);
+  return { mesh: g, w, h, d, tick(o) { swim(performance.now() / 1000); } };
+}
+// 部屋の幅いっぱいの低い水槽（通せんぼ）
+export function tankAcross() {
+  const w = FULL_W, d = 2.2, stand = .4, th = 1.3, h = stand + th + .08;
+  const frame = mat(0x1a2230, { roughness: .3 });
+  const g = group(box(w, stand, d, frame, 0, stand / 2, 0), box(w + .05, .08, d + .05, mat(0xcfe8f0, { transparent: true, opacity: .5, roughness: .05 }), 0, h - .04, 0));
+  const tank = new THREE.Group(); tank.rotation.y = Math.PI / 2; g.add(tank);
+  const swim = fillTank(tank, d - .1, th, w - .1, 0, stand, 10);
+  return { mesh: g, w, h, d, tick(o) { swim(performance.now() / 1000); } };
+}
+// こわせる物
+export function smallTank() {
+  const g = group(box(1.0, .08, .6, mat(0x1a2230), 0, .04, 0));
+  const swim = fillTank(g, .95, .7, .55, 0, .08, 2);
+  swim(Math.random() * 10);
+  return { mesh: g, w: 1.0, h: .8, d: .6, breakable: true };
+}
+export function fishFood() {
+  const g = group(cyl(.18, .18, .45, mat(0xf2c14e, { roughness: .3 }), 0, .23, 0, 12), cyl(.19, .19, .1, mat(0xd9332f), 0, .5, 0, 12), box(.3, .18, .02, mat(0x3fb6ff), 0, .25, -.18));
+  return { mesh: g, w: .4, h: .55, d: .4, breakable: true };
+}
+export function coral() {
+  const m = mat(pick([0xff7a8a, 0xff9f4a, 0xe8e0ff]), { roughness: .6 });
+  const g = group(cyl(.4, .45, .15, mat(0x1a2230), 0, .08, 0, 12));
+  for (let i = 0; i < 7; i++) { const b = cyl(.04, .08, rand(.5, 1.1), m, rand(-.25, .25), .5, rand(-.25, .25), 6); b.rotation.set(rand(-.6, .6), 0, rand(-.6, .6)); g.add(b); g.add(sphere(.08, m, b.position.x * 1.6, 1.0 + rand(0, .2), b.position.z * 1.6)); }
+  return { mesh: g, w: .9, h: 1.3, d: .9, breakable: true };
 }

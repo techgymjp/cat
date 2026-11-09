@@ -303,3 +303,15 @@ export function sheetMusic() {
     for (let s = 0; s < 6; s++) for (let k = 0; k < 7; k++) { g.beginPath(); g.ellipse(16 + k * 15, 18 + s * 24 + Math.random() * 12, 3, 2, -.4, 0, 7); g.fill(); }
   });
 }
+
+export function darkTile() {
+  return canvasTex(512, 512, (g, w, h) => {
+    g.fillStyle = '#0d1520'; g.fillRect(0, 0, w, h);
+    const n = 4, s = w / n;
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      g.fillStyle = `hsl(210, ${25 + Math.random() * 10}%, ${14 + Math.random() * 6}%)`;
+      g.fillRect(x * s + 3, y * s + 3, s - 6, s - 6);
+    }
+    noise(g, w, h, 0, .08, 2);
+  }, 3, 6);
+}

@@ -642,6 +642,7 @@ function update(dt) {
     updateHud();
   }
   updateDebris(dt);
+  { const tt = clock.elapsedTime; for (const r of rooms) if (r.group && r.group.userData.anims) for (const f of r.group.userData.anims) f(tt); }
   // コンボの表示と時間切れ
   if (state.comboTimer > 0) {
     state.comboTimer -= dt;

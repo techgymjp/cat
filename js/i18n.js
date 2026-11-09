@@ -37,7 +37,7 @@ const DICT = {
     scene: {
       genkan: '玄関', rouka: '廊下', chanoma: '茶の間', engawa: '縁側', washitsu: '和室', yoshitsu: '洋室', kids: '子ども部屋',
       study: '書斎', hobby: '秘密のホビールーム', kitchen: 'キッチン', bar: 'ホームバー', karaoke: 'カラオケルーム', billiard: 'ビリヤード室',
-      pingpong: '卓球ルーム', brick: '煉瓦の暖炉部屋', oosetsu: '洋風応接室', music: '音楽室', sunroom: '室内花壇', attic: '屋根裏部屋',
+      pingpong: '卓球ルーム', brick: '煉瓦の暖炉部屋', oosetsu: '洋風応接室', music: '音楽室', sunroom: '室内花壇', attic: '屋根裏部屋', aquarium: 'アクアリウム室',
     },
   },
   en: {
@@ -76,7 +76,7 @@ const DICT = {
       genkan: 'Entrance Hall', rouka: 'Hallway', chanoma: 'Living Room (Japanese)', engawa: 'Veranda', washitsu: 'Tatami Room', yoshitsu: 'Bedroom',
       kids: 'Kids’ Room', study: 'Study', hobby: 'Secret Hobby Room', kitchen: 'Kitchen', bar: 'Home Bar', karaoke: 'Karaoke Room',
       billiard: 'Billiard Room', pingpong: 'Table Tennis Room', brick: 'Brick Fireplace Room', oosetsu: 'Drawing Room', music: 'Music Room',
-      sunroom: 'Indoor Garden', attic: 'Attic',
+      sunroom: 'Indoor Garden', attic: 'Attic', aquarium: 'Aquarium Room',
     },
   },
 };
