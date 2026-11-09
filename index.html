@@ -8,7 +8,10 @@
   html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1410; font-family: "Hiragino Maru Gothic ProN", "Rounded Mplus 1c", "Yu Gothic", sans-serif; }
   canvas { display: block; touch-action: none; }
   #hud { position: fixed; top: 12px; left: 16px; right: 16px; display: flex; justify-content: space-between; color: #fff; font-size: 20px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,.6); pointer-events: none; }
-  .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; text-align: center; background: rgba(30, 18, 10, .55); padding: 16px; box-sizing: border-box; }
+  .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; color: #fff; text-align: center; background: rgba(30, 18, 10, .55); padding: max(60px, calc(env(safe-area-inset-top, 0px) + 52px)) 16px max(20px, env(safe-area-inset-bottom, 0px)); box-sizing: border-box; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .screen > * { flex: none; }
+  /* 収まるときは上下中央、はみ出すときは上から並べてスクロール */
+  .screen::before, .screen::after { content: ""; flex: 1 0 0; }
   .screen h1 { font-size: clamp(44px, 12vw, 88px); margin: 0 0 8px; color: #ffcf6e; text-shadow: 0 4px 0 #b5651d, 0 8px 16px rgba(0,0,0,.5); }
   .screen p { margin: 6px 0; font-size: 18px; line-height: 1.6; }
   .screen button { margin-top: 20px; font-size: 22px; font-weight: bold; padding: 12px 40px; border: none; border-radius: 999px; background: #ff9f43; color: #fff; box-shadow: 0 5px 0 #b5651d; cursor: pointer; font-family: inherit; }
@@ -16,12 +19,23 @@
   .screen button:active { transform: translateY(3px); box-shadow: 0 2px 0 #b5651d; }
   .hidden { display: none !important; }
   .keys { opacity: .85; font-size: 15px !important; }
+  /* 操作説明：タッチ端末ではスマホ用だけ、それ以外ではPC用だけを出す */
+  .k-touch { display: none; }
+  @media (hover: none) and (pointer: coarse) { .k-pc { display: none; } .k-touch { display: inline; } }
+  /* 画面の低いスマホ：文字を小さくして詰める */
+  @media (max-height: 700px) {
+    .screen h1 { font-size: clamp(34px, 10vw, 56px); margin-bottom: 4px; }
+    .screen p { font-size: 14px; line-height: 1.5; margin: 4px 0; }
+    .keys { font-size: 13px !important; }
+    .screen button { margin-top: 12px; font-size: 20px; padding: 10px 34px; }
+    .howto { margin-top: 10px; }
+  }
   #mute { pointer-events: auto; background: rgba(0,0,0,.25); border: none; border-radius: 999px; font-size: 22px; width: 44px; height: 44px; cursor: pointer; }
   #langBtn { position: absolute; top: max(14px, env(safe-area-inset-top, 0px)); right: 16px; margin: 0 !important; font-size: 15px !important; padding: 6px 16px !important; background: rgba(255,255,255,.18) !important; box-shadow: none !important; border: 1px solid rgba(255,255,255,.5) !important; }
   .spark { color: #ffe27a; font-weight: bold; }
   .howto { margin-top: 14px; color: #ffe2b8; font-size: 16px; text-decoration: underline; }
   #banner { position: fixed; top: 22%; left: 0; right: 0; text-align: center; color: #fff; font-size: clamp(28px, 7vw, 52px); font-weight: bold; letter-spacing: .1em; text-shadow: 0 3px 0 rgba(90,50,20,.8), 0 6px 18px rgba(0,0,0,.5); opacity: 0; transform: translateY(10px); transition: opacity .4s, transform .4s; pointer-events: none; }
-  #combo { position: fixed; top: 64px; left: 0; right: 0; text-align: center; color: #ffe27a; font-weight: bold; font-size: clamp(22px, 5vw, 34px); text-shadow: 0 3px 0 rgba(120,60,0,.8), 0 0 14px rgba(255,180,40,.6); pointer-events: none; opacity: 0; transition: opacity .2s; }
+  #combo { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); padding: 6px 22px 10px; border-radius: 14px; background: rgba(20, 12, 4, .62); text-align: center; color: #ffe27a; font-weight: bold; font-size: clamp(22px, 5vw, 34px); white-space: nowrap; text-shadow: -2px -2px 0 #5a2a00, 2px -2px 0 #5a2a00, -2px 2px 0 #5a2a00, 2px 2px 0 #5a2a00, 0 3px 0 #5a2a00; pointer-events: none; opacity: 0; transition: opacity .2s; }
   #combo.show { opacity: 1; }
   #comboBar { display: block; height: 6px; width: 160px; margin: 6px auto 0; border-radius: 3px; background: #ffd34d; transform-origin: left; }
   #pops { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
@@ -38,7 +52,7 @@
 </script>
 </head>
 <body>
-<div id="hud">
+<div id="hud" class="hidden">
   <div>🚪 <span id="room">1</span>　💥 <span id="smash">0</span>　📏 <span id="dist">0</span>m</div>
   <button id="mute" aria-label="BGMのオン・オフ" data-i18n-aria="mute">🔊</button>
 </div>

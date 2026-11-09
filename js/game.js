@@ -261,6 +261,7 @@ function startGame() {
   worldFresh = false;
   clock.getDelta();
   $('title').classList.add('hidden');
+  $('hud').classList.remove('hidden'); // タイトル画面では上の表示を隠しておく
   $('over').classList.add('hidden');
   updateHud();
   showBanner(sceneName('genkan'));
@@ -671,7 +672,11 @@ function update(dt) {
     p.angle += p.av * dt;
     if (near) { p.angle = Math.max(p.angle, 1.25); p.av = 0; }
     p.pivot.rotation.x = p.angle;
-    const op = THREE.MathUtils.clamp((camera.position.z - p.z - 0.6) / 5, 0, 1);
+    // ネコがくぐるまでは壁をはっきり見せ、くぐったら一瞬（約0.1秒）で消す。
+    // （少しずつ透かすと、半透明の壁が画面全体に白い膜のようにかかるため）
+    // カメラが壁を越えたあとも念のため消したままにする
+    p.fade = (p.passed || camera.position.z < p.z + .5) ? Math.max(0, (p.fade ?? 1) - dt * 9) : 1;
+    const op = p.fade;
     for (const m of p.fadeMats) { m.opacity = (m.userData.baseOpacity ?? 1) * op; m.depthWrite = op > .99; }
     p.group.visible = op > .01;
   }
