@@ -22,6 +22,10 @@ const DICT = {
     roomTxt: (n, lap, name) => `${lap > 1 ? lap + '周目の' : ''}${name}（${n}部屋目）`,
     maxCombo: (n) => `最大コンボ ${n}`,
     newRecord: '🎉 新記録！',
+    // web-only:start（Web 版だけの文言。アプリ用のビルドでは取り除く）
+    playLink: '▶ Android アプリ版（Google Play）',
+    playTm: 'Google Play および Google Play ロゴは Google LLC の商標です。',
+    // web-only:end
     shareBtn: '結果をシェア',
     pause: 'ポーズ', pauseTitle: 'ポーズ', resume: 'つづける', toTitle: 'タイトルへ', back: 'もどる', play: 'プレイ',
     privacy: 'プライバシーポリシー', privacyUrl: 'https://techgym.jp/privacy-policy/', adSettings: '広告の設定',
@@ -75,6 +79,10 @@ const DICT = {
     roomTxt: (n, lap, name) => `${name} (room ${n}${lap > 1 ? `, lap ${lap}` : ''})`,
     maxCombo: (n) => `Best combo ${n}`,
     newRecord: '🎉 New record!',
+    // web-only:start
+    playLink: '▶ Get the Android app (Google Play)',
+    playTm: 'Google Play and the Google Play logo are trademarks of Google LLC.',
+    // web-only:end
     shareBtn: 'Share your result',
     pause: 'Pause', pauseTitle: 'Paused', resume: 'Resume', toTitle: 'Title', back: 'Back', play: 'Play',
     privacy: 'Privacy Policy', privacyUrl: 'https://techgym.jp/privacy-policy-en/', adSettings: 'Ad settings',

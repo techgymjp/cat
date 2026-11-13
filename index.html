@@ -55,6 +55,8 @@
   /* アプリでは画面の下にバナー広告が出るので、そのぶん空ける */
   body.app .screen { padding-bottom: max(70px, calc(env(safe-area-inset-bottom, 0px) + 60px)); }
   body.app .howto-panel { padding-bottom: 60px; }
+  .play-link { margin-top: 12px; display: inline-block; padding: 7px 18px; border-radius: 999px; background: #1a1a1a; color: #fff; font-size: 15px; font-weight: bold; text-decoration: none; border: 1px solid rgba(255,255,255,.35); }
+  .play-tm { margin: 4px 0 0 !important; font-size: 10px !important; opacity: .6; }
   .spark { color: #ffe27a; font-weight: bold; }
   .howto { margin-top: 14px; color: #ffe2b8; font-size: 16px; text-decoration: underline; }
   #banner { position: fixed; top: 22%; left: 0; right: 0; text-align: center; color: #fff; font-size: clamp(28px, 7vw, 52px); font-weight: bold; letter-spacing: .1em; text-shadow: 0 3px 0 rgba(90,50,20,.8), 0 6px 18px rgba(0,0,0,.5); opacity: 0; transform: translateY(10px); transition: opacity .4s, transform .4s; pointer-events: none; }
@@ -95,6 +97,11 @@
   <p id="farthest" class="keys"></p>
   <button id="startBtn" disabled>じゅんび中…</button>
   <a class="howto" href="howto.html" data-i18n="howtoMore" data-i18n-href="howtoUrl">遊び方をくわしく見る</a>
+  <!-- web-only -->
+  <!-- Web 版だけ：Google Play のアプリへのリンク（アプリ用のビルドでは scripts/build-web.js がこの範囲を取り除く） -->
+  <a id="playLink" class="play-link" href="https://play.google.com/store/apps/details?id=jp.techgym.cat" target="_blank" rel="noopener" data-i18n="playLink">▶ Android アプリ版（Google Play）</a>
+  <p class="play-tm" data-i18n="playTm">Google Play および Google Play ロゴは Google LLC の商標です。</p>
+  <!-- /web-only -->
   <div id="legal" class="legal">
     <span id="buildInfo"></span>
     <a href="https://techgym.jp/privacy-policy/" data-i18n="privacy" data-i18n-href="privacyUrl" target="_blank" rel="noopener">プライバシーポリシー</a>
