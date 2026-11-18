@@ -36,4 +36,9 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- 画面は縦向きに固定しているが、縦向き・横向きの画面を持つ端末であることは必須にしない
+         （screenOrientation を指定すると Google Play がその向きを必須とみなし、対象端末が減るため） -->
+    <uses-feature android:name="android.hardware.screen.portrait" android:required="false" />
+    <uses-feature android:name="android.hardware.screen.landscape" android:required="false" />
 </manifest>
