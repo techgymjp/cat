@@ -13,7 +13,7 @@ window.Ads = (() => {
       },
       // 本番の広告ユニット（AdMob の Android アプリ「猫ボール」）。空の種類は本番ビルドで出さない
       production: {
-        interstitial: 'ca-app-pub-6411535997477460/5829278186',
+        interstitial: 'ca-app-pub-6411535997477460/8814334488',
         rewarded: 'ca-app-pub-6411535997477460/1411521026',
         banner: 'ca-app-pub-6411535997477460/9225398023',
       },
